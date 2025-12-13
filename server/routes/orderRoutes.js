@@ -1,149 +1,61 @@
 const express = require('express');
 const router = express.Router();
-const Cart = require("../models/Cart");
+const verifyToken = require('../middleware/auth');
 const Order = require("../models/Order");
 const Coupon = require("../models/Coupon");
+const Cart = require("../models/Cart");
 
-// -- CART --
 
-// get cart by user id
-router.get('/:userId', async (req, res) => {
+// Get orders for a user
+router.get('/', verifyToken, async (req, res) => {
    try {
-      const { userId } = req.params;
-      const cart = await Cart.findOne({ userId }).populate('items.menuItem');
+      const userId = req.user.id;
 
-      if (!cart) {
-         return res.status(404).json({ message: "Cart is empty" });
+      if (req.user.role !== 'admin' && req.user.id !== userId) {
+         return res.status(403).json({ message: "Access denied" });
       }
 
-      return res.status(200).json({ data: cart });
+      const orders = await Order.find({ userId }).populate('items.menuItem').sort({ createdAt: -1 });
+
+      if (orders.length === 0) {
+         return res.status(404).json({ message: "No orders found" });
+      }
+
+      return res.status(200).json({ data: orders });
    } catch (error) {
       return res.status(500).json({ message: error.message });
    }
 })
 
-// add item to cart
-router.post('/:userId/add', async (req, res) => {
+// Get single order
+router.get("/:orderId", verifyToken, async (req, res) => {
    try {
-      const { userId } = req.params;
-      const { menuItemId, quantity } = req.body;
+      const order = await Order.findById(req.params.orderId).populate("items.menuItem");
 
-      if (!menuItemId || !quantity) {
-         return res.status(400).json({ error: "menuItemId and quantity are required" });
+      if (!order) {
+         return res.status(404).json({ message: "Order not found" });
       }
 
-      let cart = await Cart.findOne({ userId });
-
-      // If no cart, create new cart
-      if (!cart) {
-         cart = new Cart({
-            userId,
-            items: [{ menuItem: menuItemId, quantity }]
-         });
-      } else {
-
-         // Check if menu item already exists
-         const itemIndex = cart.items.findIndex(
-            item => item.menuItem.toString() === menuItemId
-         );
-
-         if (itemIndex > -1) {
-            // update quantity
-            cart.items[itemIndex].quantity += quantity;
-         } else {
-            // add new item
-            cart.items.push({ menuItem: menuItemId, quantity });
-         }
+      if (req.user.role !== 'admin' && order.userId.toString() !== req.user.id) {
+         return res.status(403).json({ message: "Access denied" });
       }
 
-      await cart.save();
-
-      return res.status(200).json({
-         message: "Item added to cart successfully",
-         data: cart
-      });
-
+      return res.status(200).json({ data: order });
    } catch (error) {
       return res.status(500).json({ message: error.message });
    }
 });
 
-// update item quantity in cart
-router.patch('/:userId/update', async (req, res) => {
+
+// Place order
+router.post('/', verifyToken, async (req, res) => {
    try {
-      const { userId } = req.params;
-      const { menuItemId, quantity } = req.body;
+      const userId = req.user.id;
 
-      if (!menuItemId || !quantity) {
-         return res.status(400).json({ error: "menuItemId and quantity are required" });
+      if (req.user.id !== userId) {
+         return res.status(403).json({ message: "Access denied" });
       }
 
-      const cart = await Cart.findOne({ userId });
-      if (!cart) {
-         return res.status(404).json({ message: "Cart not found" });
-      }
-
-      const itemIndex = cart.items.findIndex(
-         item => item.menuItem.toString() === menuItemId
-      );
-
-      if (itemIndex === -1) {
-         return res.status(404).json({ message: "Item not found in cart" });
-      }
-
-      cart.items[itemIndex].quantity = quantity;
-      await cart.save();
-      return res.status(200).json({ message: "Quantity updated", data: cart });
-
-   } catch (error) {
-      return res.status(500).json({ message: error.message });
-   }
-})
-
-// delete specific item from cart
-router.delete('/:userId/delete/:itemId', async (req, res) => {
-   try {
-      const { userId, itemId } = req.params;
-      const cart = await Cart.findOne({ userId });
-
-      if (!cart) {
-         return res.status(404).json({ message: "Cart not found" });
-      }
-
-      cart.items = cart.items.filter(
-         item => item._id.toString() !== itemId
-      )
-
-      await cart.save();
-      return res.status(200).json({ message: "Item removed from cart", data: cart });
-   } catch (error) {
-      return res.status(500).json({ message: error.message });
-   }
-})
-
-// delete entire cart
-router.delete('/:userId/clear', async (req, res) => {
-   try {
-      const { userId } = req.params;
-      const cart = await Cart.findOne({ userId });
-      if (!cart) {
-         return res.status(404).json({ message: "Cart not found" });
-      }
-      cart.items = [];
-      await cart.save();
-      return res.status(200).json({ message: "Cart cleared successfully" });
-   } catch (error) {
-      return res.status(500).json({ message: error.message });
-   }
-})
-
-
-// -- ORDER --
-
-// place order
-router.post('/:userId', async (req, res) => {
-   try {
-      const { userId } = req.params;
       const { paymentMethod, deliveryAddress, couponCode } = req.body;
       const cart = await Cart.findOne({ userId }).populate('items.menuItem');
 
@@ -198,5 +110,31 @@ router.post('/:userId', async (req, res) => {
       return res.status(500).json({ message: error.message });
    }
 });
+
+// Cancel order (admin or user)
+router.patch('/:orderId/cancel', verifyToken, async (req, res) => {
+   try {
+      const { orderId } = req.params;
+      const order = await Order.findById(orderId);
+
+      if (!order) {
+         return res.status(404).json({ message: "Order not found" });
+      }
+
+      if (req.user.role !== 'admin' && order.userId.toString() !== req.user.id) {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      if (['Delivered', 'Cancelled'].includes(order.status)) {
+         return res.status(400).json({ message: `Cannot cancel order with status ${order.status}` });
+      }
+
+      order.status = 'Cancelled';
+      await order.save();
+      return res.status(200).json({ message: "Order cancelled", data: order });
+   } catch (error) {
+      return res.status(500).json({ message: error.message });
+   }
+})
 
 module.exports = router;

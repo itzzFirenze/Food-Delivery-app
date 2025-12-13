@@ -2,23 +2,26 @@ const express = require('express');
 const router = express.Router();
 const Restaurant = require("../models/Restaurant");
 const MenuItem = require("../models/MenuItem");
+const verifyToken = require('../middleware/auth');
 
-// get all restaurants
+// -- RESTAURANT --
+
+// Get all restaurants
 router.get('/', async (req, res) => {
    try {
-      const restuarants = await Restaurant.find({});
+      const restaurants = await Restaurant.find();
 
-      if (!restuarants) {
+      if (restaurants.length === 0) {
          return res.status(404).json({ message: "No restaurants found" });
       }
 
-      return res.status(200).json({ data: restuarants })
+      return res.status(200).json({ data: restaurants })
    } catch (error) {
       return res.status(500).json({ message: error.message });
    }
 })
 
-// get restaurant by id
+// Get restaurant by id
 router.get('/:id', async (req, res) => {
    try {
       const restaurant = await Restaurant.findById(req.params.id);
@@ -33,14 +36,20 @@ router.get('/:id', async (req, res) => {
    }
 })
 
-// create new restaurant
-router.post('/', async (req, res) => {
+// Create new restaurant (admin or restaurant owner)
+router.post('/', verifyToken, async (req, res) => {
    try {
-      const { name, address, image, owner } = req.body;
+      const { name, address, image } = req.body;
 
-      if (!name || !address || !image || !owner) {
+      if (!name || !address || !image) {
          return res.status(400).json({ error: "All fields are required" });
       }
+
+      if (req.user.role !== 'admin' && req.user.role !== 'restaurant_owner') {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      const owner = req.user.id;
 
       const newRestaurant = new Restaurant({
          name,
@@ -55,13 +64,23 @@ router.post('/', async (req, res) => {
    }
 })
 
-// update restaurant
-router.put('/:id', async (req, res) => {
+// Update restaurant (admin or restaurant owner)
+router.patch('/:id', verifyToken, async (req, res) => {
    try {
       const id = req.params.id;
-      const { name, address, image, owner } = req.body;
+      const { name, address, image } = req.body;
 
-      if (!name || !address || !image || !owner) {
+      const restaurant = await Restaurant.findById(id);
+
+      if (!restaurant) {
+         return res.status(404).json({ message: "Restaurant not found" });
+      }
+
+      if (req.user.role !== 'admin' && req.user.id !== restaurant.owner.toString()) {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      if (!name || !address || !image) {
          return res.status(400).json({ error: "All fields are required" });
       }
 
@@ -72,44 +91,52 @@ router.put('/:id', async (req, res) => {
          {
             name,
             address,
-            image,
-            owner
+            image
          },
          {
             new: true
          }
       );
-      return res.status(201).json({ message: "Restaurant created successfully", data: updatedRestaurant });
+      return res.status(200).json({ message: "Restaurant updated successfully", data: updatedRestaurant });
    } catch (error) {
       return res.status(500).json({ message: error.message });
    }
 })
 
-// delete resutaurant
-router.delete('/:id', async (req, res) => {
+// Delete restaurant (admin or restaurant owner)
+router.delete('/:id', verifyToken, async (req, res) => {
    try {
       const id = req.params.id;
-      const deletedRestaurant = await Restaurant.findByIdAndDelete(id);
 
-      if (!deletedRestaurant) {
-         return res.status(404).json({ message: `Restaurant with id ${reqid} not found` })
+      // Find the restaurant first (without deleting)
+      const restaurant = await Restaurant.findById(id);
+      if (!restaurant) {
+         return res.status(404).json({ message: `Restaurant with id ${id} not found` });
       }
+
+      // Check permissions BEFORE deleting
+      if (req.user.role !== 'admin' && req.user.id !== restaurant.owner.toString()) {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Now delete the restaurant
+      await Restaurant.findByIdAndDelete(id);
 
       return res.status(200).json({ message: `Restaurant with id ${id} deleted successfully` });
    } catch (error) {
       return res.status(500).json({ message: error.message });
    }
-})
+});
 
 // -- MENU --
 
-// get menu for a restaurant
+// Get menu for a restaurant
 router.get('/:id/menu', async (req, res) => {
    try {
       const id = req.params.id;
       const menuItems = await MenuItem.find({ restaurantId: id });
 
-      if (!menuItems) {
+      if (menuItems.length === 0) {
          return res.status(404).json({ message: "No menu items found for this restaurant" });
       }
 
@@ -119,20 +146,25 @@ router.get('/:id/menu', async (req, res) => {
    }
 })
 
-// add menu item to a restaurant
-router.post('/:id/menu', async (req, res) => {
+// Add menu item to a restaurant (admin or restaurant owner)
+router.post('/:id/menu', verifyToken, async (req, res) => {
    try {
       const id = req.params.id;
       const { title, description, price, category, image } = req.body;
+      const restaurant = await Restaurant.findById(id);
+
+      if (!restaurant) {
+         return res.status(404).json({ message: "Restaurant not found" });
+      }
+
+      if (req.user.role !== 'admin' && req.user.id !== restaurant.owner.toString()) {
+         return res.status(403).json({ message: "Access denied" });
+      }
 
       if (!title || !price || !category) {
          return res.status(400).json({ error: "Title, price and category are required" });
       }
 
-      const restaurant = await Restaurant.findById(id);
-      if (!restaurant) {
-         return res.status(404).json({ message: "Restaurant not found" });
-      }
 
       const newMenuItem = new MenuItem({
          restaurantId: id,
@@ -149,31 +181,26 @@ router.post('/:id/menu', async (req, res) => {
    }
 })
 
-// delete menu item from a restaurant
-router.delete('/:restaurantId/menu/:menuItemId', async (req, res) => {
-   try {
-      const { restaurantId, menuItemId } = req.params;
-      const deletedMenuItem = await MenuItem.findOneAndDelete({ _id: menuItemId, restaurantId: restaurantId });
 
-      if (!deletedMenuItem) {
-         return res.status(404).json({ message: "Menu item not found for this restaurant" });
-      }
-
-      return res.status(200).json({ message: "Menu item deleted successfully" });
-   } catch (error) {
-      return res.status(500).json({ message: error.message });
-   }
-})
-
-// update menu item for a restaurant
-router.put('/:restaurantId/menu/:menuItemId', async (req, res) => {
+// Update menu item for a restaurant (admin or restaurant owner)
+router.patch('/:restaurantId/menu/:menuItemId', verifyToken, async (req, res) => {
    try {
       const { restaurantId, menuItemId } = req.params;
       const { title, description, price, category, image } = req.body;
 
-      if (!title || !price || !category) {
-         return res.status(400).json({ error: "Title, price and category are required" });
+      const restaurant = await Restaurant.findById(restaurantId);
+
+      if (!restaurant) {
+         return res.status(404).json({ message: "Restaurant not found" });
       }
+
+      if (req.user.role !== 'admin' && req.user.id !== restaurant.owner.toString()) {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      // if (!title || !price || !category) {
+      //    return res.status(400).json({ error: "Title, price and category are required" });
+      // }
 
       const updatedMenuItem = await MenuItem.findOneAndUpdate(
          {
@@ -201,5 +228,32 @@ router.put('/:restaurantId/menu/:menuItemId', async (req, res) => {
       return res.status(500).json({ message: error.message });
    }
 })
+
+// Delete menu item from a restaurant (admin or restaurant)
+router.delete('/:restaurantId/menu/:menuItemId', verifyToken, async (req, res) => {
+   try {
+      const { restaurantId, menuItemId } = req.params;
+      const restaurant = await Restaurant.findById(restaurantId);
+
+      if (!restaurant) {
+         return res.status(404).json({ message: "Restaurant not found" });
+      }
+
+      if (req.user.role !== 'admin' && req.user.id !== restaurant.owner.toString()) {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      const deletedMenuItem = await MenuItem.findOneAndDelete({ _id: menuItemId, restaurantId: restaurantId });
+
+      if (!deletedMenuItem) {
+         return res.status(404).json({ message: "Menu item not found for this restaurant" });
+      }
+
+      return res.status(200).json({ message: "Menu item deleted successfully" });
+   } catch (error) {
+      return res.status(500).json({ message: error.message });
+   }
+})
+
 
 module.exports = router;

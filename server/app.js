@@ -5,6 +5,8 @@ const dotenv = require('dotenv').config();
 
 const restaurantRoutes = require('./routes/restaurantRoutes');
 const userRoutes = require('./routes/userRoutes');
+const authRoutes = require('./routes/authRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const couponRoutes = require('./routes/couponRoutes');
 
@@ -16,7 +18,9 @@ app.use(express.json());
 app.use(cors());
 
 app.use('/users', userRoutes);
+app.use('/auth', authRoutes);
 app.use('/restaurants', restaurantRoutes);
+app.use('/cart', cartRoutes);
 app.use('/orders', orderRoutes);
 app.use('/coupons', couponRoutes);
 
