@@ -9,6 +9,10 @@ const restaurantSchema = new mongoose.Schema({
       type: String,
       required: true
    },
+   isVeg: {
+      type: Boolean,
+      required: true
+   },
    image: {
       type: String,
       required: true

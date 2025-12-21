@@ -21,6 +21,10 @@ const menuItemSchema = new mongoose.Schema({
       type: String,
       required: true
    },
+   veg: {
+      type: Boolean,
+      required: true
+   },
    image: {
       type: String
    }

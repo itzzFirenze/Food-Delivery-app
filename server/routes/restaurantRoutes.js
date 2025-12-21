@@ -39,7 +39,7 @@ router.get('/:id', async (req, res) => {
 // Create new restaurant (admin or restaurant owner)
 router.post('/', verifyToken, async (req, res) => {
    try {
-      const { name, address, image } = req.body;
+      const { name, address, image, isVeg } = req.body;
 
       if (!name || !address || !image) {
          return res.status(400).json({ error: "All fields are required" });
@@ -54,6 +54,7 @@ router.post('/', verifyToken, async (req, res) => {
       const newRestaurant = new Restaurant({
          name,
          address,
+         isVeg,
          image,
          owner
       });
@@ -68,7 +69,7 @@ router.post('/', verifyToken, async (req, res) => {
 router.patch('/:id', verifyToken, async (req, res) => {
    try {
       const id = req.params.id;
-      const { name, address, image } = req.body;
+      const { name, address, image, isVeg } = req.body;
 
       const restaurant = await Restaurant.findById(id);
 
@@ -91,6 +92,7 @@ router.patch('/:id', verifyToken, async (req, res) => {
          {
             name,
             address,
+            isVeg,
             image
          },
          {
@@ -150,7 +152,7 @@ router.get('/:id/menu', async (req, res) => {
 router.post('/:id/menu', verifyToken, async (req, res) => {
    try {
       const id = req.params.id;
-      const { title, description, price, category, image } = req.body;
+      const { title, description, price, category, image, veg } = req.body;
       const restaurant = await Restaurant.findById(id);
 
       if (!restaurant) {
@@ -172,6 +174,7 @@ router.post('/:id/menu', verifyToken, async (req, res) => {
          description,
          price,
          category,
+         veg,
          image
       })
       await newMenuItem.save();
@@ -186,7 +189,7 @@ router.post('/:id/menu', verifyToken, async (req, res) => {
 router.patch('/:restaurantId/menu/:menuItemId', verifyToken, async (req, res) => {
    try {
       const { restaurantId, menuItemId } = req.params;
-      const { title, description, price, category, image } = req.body;
+      const { title, description, price, category, image, veg } = req.body;
 
       const restaurant = await Restaurant.findById(restaurantId);
 
@@ -212,6 +215,7 @@ router.patch('/:restaurantId/menu/:menuItemId', verifyToken, async (req, res) =>
             description,
             price,
             category,
+            veg,
             image
          },
          {
