@@ -28,7 +28,22 @@ router.post('/register', async (req, res) => {
          role: role || "user"
       });
       await newUser.save();
-      return res.status(201).json({ message: "User registered successfully", data: newUser });
+      const token = jwt.sign(
+         {
+            id: newUser._id,
+            role: newUser.role,
+            name: newUser.name
+         },
+         process.env.JWT_SECRET,
+         { expiresIn: '7d' }
+      );
+
+      // 3. Send token and user data back
+      return res.status(201).json({
+         message: "User registered successfully",
+         token,
+         user: newUser
+      });
    } catch (error) {
       return res.status(500).json({ message: error.message });
    }
@@ -46,7 +61,7 @@ router.post('/login', async (req, res) => {
       const user = await User.findOne({ email }).select('+password');
 
       if (!user) {
-         return res.status(400).json({ error: "User doesn't exist" });
+         return res.status(400).json({ error: "Invalid user crendentials" });
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -56,7 +71,7 @@ router.post('/login', async (req, res) => {
       }
 
       const token = jwt.sign(
-         { id: user._id, role: user.role },
+         { id: user._id, role: user.role, name: user.name },
          process.env.JWT_SECRET,
          { expiresIn: '7d' }
       );

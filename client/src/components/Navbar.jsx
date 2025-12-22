@@ -55,7 +55,7 @@ const Navbar = () => {
                {user ? (
                   <div className="flex items-center space-x-4">
                      <span className="text-sm font-semibold text-gray-700 hidden sm:block">
-                        Hi, {user.name}
+                        Hi, {user.name?.split(" ")[0]}
                      </span>
                      <button
                         onClick={handleLogout}

@@ -1,65 +1,59 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { MdRestaurantMenu } from "react-icons/md";
 
 const RestaurantCard = ({ restaurant }) => {
    return (
       <Link 
          to={`/restaurant/${restaurant._id}`}
-         className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 block"
+         className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 block relative"
       >
-         {/* Image Section with Overlay */}
-         <div className="relative h-52 w-full">
+         {/* Image Section with Parallax Zoom Effect */}
+         <div className="relative h-52 w-full overflow-hidden">
             <img
                src={restaurant.image || "https://via.placeholder.com/400x300?text=Restaurant"}
                alt={restaurant.name}
-               className="w-full h-full object-cover"
+               className="w-full h-full object-cover transform transition-transform duration-700 ease-in-out group-hover:scale-110 group-hover:brightness-90"
             />
-            {/* Dark gradient overlay at bottom */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            
+            {/* Dark gradient overlay (Always visible for text readability) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-90"></div>
             
             {/* Restaurant Name - Bottom Left */}
-            <div className="absolute bottom-3 left-4">
-               <h3 className="text-white text-2xl font-bold drop-shadow-lg">
+            <div className="absolute bottom-3 left-4 right-16 z-10 translate-y-0 transition-transform duration-300 group-hover:-translate-y-1">
+               <h3 className="text-white text-xl font-bold leading-tight drop-shadow-md line-clamp-1">
                   {restaurant.name}
                </h3>
             </div>
 
-            {/* Rating Badge - Bottom Right */}
+            {/* Rating Badge - Bottom Right (Floating) */}
             {restaurant.rating && (
-               <div className="absolute bottom-3 right-4 bg-green-600 text-white px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
-                  <span className="text-white text-lg">★</span>
-                  <span className="font-semibold">{restaurant.rating}</span>
+               <div className="absolute bottom-3 right-4 z-10 bg-white/20 backdrop-blur-md border border-white/30 text-white px-2 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+                  <span className="text-yellow-400 text-sm">★</span>
+                  <span className="font-bold text-sm">{restaurant.rating}</span>
                </div>
             )}
          </div>
 
          {/* Content Section */}
-         <div className="p-4">
-            {/* Cuisine Type */}
-            <p className="text-gray-600 text-sm mb-1">
-               {restaurant.cuisine || 'Multi Cuisine'}
-            </p>
-
-            {/* Location and Distance */}
-            <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
-               <span className="truncate flex-1">{restaurant.address || restaurant.location}</span>
+         <div className="p-4 bg-white relative z-20">
+            {/* Cuisine & Distance Row */}
+            <div className="flex justify-between items-start mb-3">
+               <div className='flex flex-col'>
+                   <p className="text-gray-800 font-medium text-sm">
+                      {restaurant.cuisine || 'Multi Cuisine'}
+                   </p>
+                   <p className="text-gray-500 text-xs mt-0.5 truncate max-w-[150px]">
+                      {restaurant.address || restaurant.location}
+                   </p>
+               </div>
+               
                {restaurant.distance && (
-                  <span className="ml-2 whitespace-nowrap">{restaurant.distance}</span>
+                  <div className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">
+                     {restaurant.distance}
+                  </div>
                )}
             </div>
-
-            {/* Table Booking Button */}
-            <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 mb-3">
-               <span className="text-gray-600">📅</span>
-               <span>Table booking</span>
-            </button>
-
-            {/* Offer Banner */}
-            {/* {restaurant.offer && (
-               <div className="bg-teal-50 text-teal-700 text-sm font-medium py-2 px-4 rounded-lg text-center border border-teal-100">
-                  {restaurant.offer}
-               </div>
-            )} */}
          </div>
       </Link>
    )
