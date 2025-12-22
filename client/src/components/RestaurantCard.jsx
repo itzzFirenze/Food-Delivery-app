@@ -17,7 +17,7 @@ const RestaurantCard = ({ restaurant }) => {
             />
             
             {/* Dark gradient overlay (Always visible for text readability) */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-90"></div>
+            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-90"></div>
             
             {/* Restaurant Name - Bottom Left */}
             <div className="absolute bottom-3 left-4 right-16 z-10 translate-y-0 transition-transform duration-300 group-hover:-translate-y-1">
@@ -43,7 +43,7 @@ const RestaurantCard = ({ restaurant }) => {
                    <p className="text-gray-800 font-medium text-sm">
                       {restaurant.cuisine || 'Multi Cuisine'}
                    </p>
-                   <p className="text-gray-500 text-xs mt-0.5 truncate max-w-[150px]">
+                   <p className="text-gray-500 text-xs mt-0.5 truncate max-w-37.5">
                       {restaurant.address || restaurant.location}
                    </p>
                </div>
