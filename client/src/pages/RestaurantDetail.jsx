@@ -303,7 +303,7 @@ const RestaurantDetail = () => {
          <Link to='/cart'>
             {cartCount > 0 && (
                <div className='fixed bottom-8 right-8 z-50'>
-                  <button className='bg-blue-600 hover:bg-blue-700 text-white rounded-full p-5 shadow-2xl transition-all hover:scale-110 relative group'>
+                  <button className='bg-blue-600 hover:bg-blue-700 text-white rounded-full p-5 shadow-2xl transition-all hover:scale-110 relative group cursor-pointer'>
                      <FaShoppingCart className='text-2xl' />
                      <span className='absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center'>
                         {cartCount}

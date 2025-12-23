@@ -108,7 +108,7 @@ const Restaurants = () => {
                      </button>
 
                      {/* Filters Button */}
-                     <button
+                     {/* <button
                         onClick={() => setShowFilters(!showFilters)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all whitespace-nowrap ${
                            showFilters 
@@ -118,7 +118,7 @@ const Restaurants = () => {
                      >
                         <FaFilter className={showFilters ? 'text-blue-500' : 'text-gray-500'} />
                         Filters
-                     </button>
+                     </button> */}
                   </div>
                </div>
 

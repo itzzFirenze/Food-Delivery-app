@@ -173,7 +173,7 @@ const Cart = () => {
                zipCode: address.zipCode,
                city: address.city
             },
-            paymentMethod: paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1),
+            paymentMethod: paymentMethod,
             couponCode: appliedCoupon?.code || undefined
          };
 
@@ -331,7 +331,7 @@ const Cart = () => {
                                  <div className='col-span-1 flex justify-end'>
                                     <button
                                        onClick={() => removeItem(item._id)}
-                                       className='text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition'
+                                       className='text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition cursor-pointer'
                                     >
                                        <FaTrash />
                                     </button>
@@ -392,7 +392,6 @@ const Cart = () => {
                            <FaTag className='text-blue-600' />
                            Apply Coupon
                         </h2>
-
                         {appliedCoupon ? (
                            <div className='bg-green-50 border border-green-200 rounded-lg p-4'>
                               <div className='flex items-center justify-between mb-2'>
@@ -415,7 +414,7 @@ const Cart = () => {
                            </div>
                         ) : (
                            <div>
-                              <div className='flex gap-2 mb-2'>
+                              <div className='flex flex-col sm:flex-row gap-2 mb-2'>
                                  <input
                                     type='text'
                                     placeholder='Enter coupon code'
@@ -424,12 +423,12 @@ const Cart = () => {
                                        setCouponCode(e.target.value.toUpperCase());
                                        setCouponError('');
                                     }}
-                                    className='flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                    className='w-full sm:flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
                                  />
                                  <button
                                     onClick={validateCoupon}
                                     disabled={couponLoading}
-                                    className='bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed'
+                                    className='w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer'
                                  >
                                     {couponLoading ? 'Checking...' : 'Apply'}
                                  </button>
@@ -480,7 +479,7 @@ const Cart = () => {
                                  <input
                                     type='radio'
                                     name='payment'
-                                    value='cash'
+                                    value='Cash on Delivery'
                                     checked={paymentMethod === 'Cash on Delivery'}
                                     onChange={(e) => setPaymentMethod(e.target.value)}
                                     className='w-4 h-4 text-blue-600'
@@ -491,7 +490,7 @@ const Cart = () => {
                                  <input
                                     type='radio'
                                     name='payment'
-                                    value='card'
+                                    value='Debit Card'
                                     checked={paymentMethod === 'Debit Card'}
                                     onChange={(e) => setPaymentMethod(e.target.value)}
                                     className='w-4 h-4 text-blue-600'
@@ -502,7 +501,7 @@ const Cart = () => {
                                  <input
                                     type='radio'
                                     name='payment'
-                                    value='upi'
+                                    value='Online Payment'
                                     checked={paymentMethod === 'Online Payment'}
                                     onChange={(e) => setPaymentMethod(e.target.value)}
                                     className='w-4 h-4 text-blue-600'
@@ -514,7 +513,7 @@ const Cart = () => {
 
                         <button
                            onClick={handlePlaceOrder}
-                           className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-4 rounded-xl transition shadow-md hover:shadow-lg'
+                           className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-4 rounded-xl transition shadow-md hover:shadow-lg cursor-pointer'
                         >
                            Place Order
                         </button>
