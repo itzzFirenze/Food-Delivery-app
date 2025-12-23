@@ -9,7 +9,7 @@ const verifyToken = require('../middleware/auth');
 // Get all restaurants
 router.get('/', async (req, res) => {
    try {
-      const restaurants = await Restaurant.find();
+      const restaurants = (await Restaurant.find().sort({ createdAt: -1 }));
 
       if (restaurants.length === 0) {
          return res.status(404).json({ message: "No restaurants found" });

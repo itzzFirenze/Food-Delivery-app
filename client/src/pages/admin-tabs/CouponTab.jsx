@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
+import { toast, Toaster } from 'react-hot-toast';
+import DeleteModal from '../../components/DeleteModal';
 import API from '../../services/api';
 
 const CouponTab = () => {
@@ -8,6 +10,9 @@ const CouponTab = () => {
    const [showCouponForm, setShowCouponForm] = useState(false);
    const [isEditingCoupon, setIsEditingCoupon] = useState(false);
    const [editingCouponId, setEditingCouponId] = useState(null);
+   const [showDeleteModal, setShowDeleteModal] = useState(false);
+   const [couponToDelete, setCouponToDelete] = useState(null);
+   const [isDeleting, setIsDeleting] = useState(false);
    const [couponForm, setCouponForm] = useState({
       code: '',
       discountType: 'percentage',
@@ -32,9 +37,13 @@ const CouponTab = () => {
       }
    };
 
+   const openDeleteModal = (coupon) => {
+      setCouponToDelete(coupon);
+      setShowDeleteModal(true);
+   };
+
    const handleCouponSubmit = async (e) => {
       e.preventDefault();
-      // ... (Validation logic)
       try {
          const couponData = {
             ...couponForm,
@@ -45,26 +54,30 @@ const CouponTab = () => {
 
          if (isEditingCoupon && editingCouponId) {
             await API.patch(`/coupons/${editingCouponId}`, couponData);
-            alert('Coupon updated successfully!');
+            toast.success('Coupon updated successfully!');
          } else {
             await API.post('/coupons', couponData);
-            alert('Coupon created successfully!');
+            toast.success('Coupon created successfully!');
          }
          resetCouponForm();
          fetchCoupons();
       } catch (err) {
-         alert(err.response?.data?.message || 'Failed to save coupon');
+         toast.error(err.response?.data?.message || 'Failed to save coupon');
       }
    };
 
-   const handleDeleteCoupon = async (couponId) => {
-      if (!window.confirm('Are you sure you want to delete this coupon?')) return;
+   const handleDeleteCoupon = async () => {
+      if (!couponToDelete) return;
       try {
-         await API.delete(`/coupons/${couponId}`);
-         alert('Coupon deleted successfully!');
+         await API.delete(`/coupons/${couponToDelete?._id}`);
+         toast.success('Coupon deleted successfully!');
          fetchCoupons();
+         setShowDeleteModal(false);
+         setCouponToDelete(null);
       } catch (err) {
-         alert(err.response?.data?.message || 'Failed to delete coupon');
+         toast.error(err.response?.data?.message || 'Failed to delete coupon');
+      } finally {
+         setIsDeleting(false);
       }
    };
 
@@ -93,6 +106,7 @@ const CouponTab = () => {
 
    return (
       <div className='space-y-6'>
+         <Toaster position='top-center' reverseOrder={false} />
          {!showCouponForm && (
             <button onClick={() => setShowCouponForm(true)} className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg flex items-center justify-center gap-2 cursor-pointer'>
                <FaPlus /> Add New Coupon
@@ -261,7 +275,7 @@ const CouponTab = () => {
                               <FaEdit className='inline mr-1' /> Edit
                            </button>
                            <button
-                              onClick={() => handleDeleteCoupon(coupon._id)}
+                              onClick={() => openDeleteModal(coupon)}
                               className='flex-1 p-2 text-red-600 hover:bg-red-100 bg-red-50 rounded-lg cursor-pointer transition text-center font-semibold'
                            >
                               <FaTrash className='inline mr-1' /> Delete
@@ -271,6 +285,21 @@ const CouponTab = () => {
                   ))}
                </div>
             )}
+
+            <DeleteModal
+               isOpen={showDeleteModal}
+               onClose={() => {
+                  setShowDeleteModal(false);
+                  setCouponToDelete(null);
+               }}
+               onConfirm={handleDeleteCoupon}
+               title='Delete User'
+               message={`Are you sure you want to delete ${couponToDelete?.name}? This action cannot be undone`}
+               confirmText='Delete'
+               cancelText='Cancel'
+               isLoading={isDeleting}
+            />
+
          </div>
       </div>
    );

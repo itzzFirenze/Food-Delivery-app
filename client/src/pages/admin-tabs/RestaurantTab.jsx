@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { FaEye, FaTrash, FaTimes } from 'react-icons/fa';
+import { toast, Toaster } from 'react-hot-toast';
+import DeleteModal from '../../components/DeleteModal';
 import API from '../../services/api';
 
 const RestaurantTab = () => {
    const [restaurants, setRestaurants] = useState([]);
    const [loading, setLoading] = useState(true);
    const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+   const [showDeleteModal, setShowDeleteModal] = useState(false);
+   const [restaurantToDelete, setRestaurantToDelete] = useState(null);
+   const [isDeleting, setIsDeleting] = useState(false);
 
    useEffect(() => {
       fetchRestaurants();
@@ -22,15 +27,24 @@ const RestaurantTab = () => {
       }
    };
 
-   const handleDeleteRestaurant = async (restaurantId) => {
-      if (!window.confirm('Are you sure you want to delete this restaurant?')) return;
+   const openDeleteModal = (restaurant) => {
+      setRestaurantToDelete(restaurant);
+      setShowDeleteModal(true);
+   };
+
+   const handleDeleteRestaurant = async () => {
+      if (!restaurantToDelete) return;
       try {
-         await API.delete(`/restaurants/${restaurantId}`);
-         alert('Restaurant deleted successfully!');
+         await API.delete(`/restaurants/${restaurantToDelete?._id}`);
+         toast.success('Restaurant deleted successfully!');
          fetchRestaurants();
          setSelectedRestaurant(null);
+         setShowDeleteModal(false);
+         setRestaurantToDelete(null);
       } catch (err) {
-         alert(err.response?.data?.message || 'Failed to delete restaurant');
+         toast.error(err.response?.data?.message || 'Failed to delete restaurant');
+      } finally {
+         setIsDeleting(false);
       }
    };
 
@@ -38,6 +52,7 @@ const RestaurantTab = () => {
 
    return (
       <div className='bg-white rounded-2xl shadow-sm p-6'>
+         <Toaster position='top-center' reverseOrder={false} />
          <h2 className='text-2xl font-semibold text-gray-900 mb-6'>Restaurants ({restaurants.length})</h2>
 
          {restaurants.length === 0 ? (
@@ -66,7 +81,7 @@ const RestaurantTab = () => {
                               <FaEye className="inline mr-1" /> View
                            </button>
                            <button
-                              onClick={() => handleDeleteRestaurant(restaurant._id)}
+                              onClick={() => openDeleteModal(restaurant)}
                               className='flex-1 p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg cursor-pointer font-semibold'>
                               <FaTrash className="inline mr-1" /> Delete
                            </button>
@@ -127,7 +142,7 @@ const RestaurantTab = () => {
                         Close
                      </button>
                      <button
-                        onClick={() => handleDeleteRestaurant(selectedRestaurant._id)}
+                        onClick={() => openDeleteModal(selectedRestaurant)}
                         className='flex-1 bg-red-600 text-white py-3 rounded-lg cursor-pointer font-semibold'>
                         Delete Restaurant
                      </button>
@@ -135,6 +150,21 @@ const RestaurantTab = () => {
                </div>
             </div>
          )}
+
+         <DeleteModal
+            isOpen={showDeleteModal}
+            onClose={() => {
+               setShowDeleteModal(false);
+               setRestaurantToDelete(null);
+            }}
+            onConfirm={handleDeleteRestaurant}
+            title='Delete Restaurant'
+            message={`Are you sure you want to delete ${restaurantToDelete?.name}? This action cannot be undone`}
+            confirmText='Delete'
+            cancelText='Cancel'
+            isLoading={isDeleting}
+         />
+
       </div>
    );
 };

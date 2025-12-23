@@ -99,7 +99,7 @@ const Register = () => {
 
 
    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center px-4 py-12">
          <div className="max-w-md w-full">
             <div className="text-center mb-8">
                <h1 className="text-5xl font-bold text-blue-500 mb-2">Cravyo</h1>

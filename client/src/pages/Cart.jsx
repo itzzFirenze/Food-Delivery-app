@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaShoppingCart, FaTrash, FaTag } from 'react-icons/fa';
+import { FaTrash, FaTag } from 'react-icons/fa';
+import { toast, Toaster } from 'react-hot-toast';
 import API from '../services/api';
 
 const Cart = () => {
@@ -63,7 +64,7 @@ const Cart = () => {
          fetchCart(false);
       } catch (err) {
          console.error('Error updating quantity:', err);
-         alert('Failed to update quantity');
+         toast.error('Failed to update quantity');
       }
    };
 
@@ -73,7 +74,7 @@ const Cart = () => {
          fetchCart(false);
       } catch (err) {
          console.error('Error removing item:', err);
-         alert('Failed to remove item');
+         toast.error('Failed to remove item');
       }
    };
 
@@ -89,7 +90,7 @@ const Cart = () => {
          fetchCart();
       } catch (err) {
          console.error('Error clearing cart:', err);
-         alert('Failed to clear cart');
+         toast.error('Failed to clear cart');
       }
    };
 
@@ -106,7 +107,7 @@ const Cart = () => {
          const response = await API.get(`/coupons/validate/${couponCode.trim()}`);
          setAppliedCoupon(response.data.data);
          setCouponError('');
-         alert('Coupon applied successfully!');
+         toast.success('Coupon applied successfully!');
       } catch (err) {
          console.error('Error validating coupon:', err);
          setCouponError(err.response?.data?.message || 'Invalid coupon code');
@@ -155,12 +156,12 @@ const Cart = () => {
 
    const handlePlaceOrder = async () => {
       if (!cart || cart.items.length === 0) {
-         alert('Your cart is empty');
+         toast.error('Your cart is empty');
          return;
       }
 
       if (!address.street || !address.city || !address.state || !address.zipCode || !address.phone) {
-         alert('Please fill in all address fields');
+         toast.error('Please fill in all address fields');
          return;
       }
 
@@ -178,7 +179,7 @@ const Cart = () => {
          };
 
          await API.post('/orders', orderData);
-         alert("Order placed successfully");
+         toast.success("Order placed successfully");
          setAppliedCoupon(null);
          setCouponCode('');
          setAddress({
@@ -191,7 +192,7 @@ const Cart = () => {
          navigate('/orders');
       } catch (error) {
          console.error('Error placing order: ', error);
-         alert(error.response?.data?.message || 'Failed to place order. Please try again.');
+         toast.error(error.response?.data?.message || 'Failed to place order. Please try again.');
       }
    };
 
@@ -223,6 +224,7 @@ const Cart = () => {
 
    return (
       <div className='min-h-screen bg-gray-50'>
+         <Toaster position='top-center' reverseOrder={false}/>
          {/* Main Content */}
          <div className='max-w-7xl mx-auto px-4 py-8'>
             <div className='flex items-center justify-between mb-8'>
@@ -304,7 +306,7 @@ const Cart = () => {
                                     <div className='flex items-center gap-3 bg-gray-100 rounded-xl'>
                                        <button
                                           onClick={() => updateQuantity(item._id, item.menuItem._id, item.quantity - 1)}
-                                          className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-l-xl transition'
+                                          className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-l-xl transition cursor-pointer'
                                        >
                                           -
                                        </button>
@@ -313,7 +315,7 @@ const Cart = () => {
                                        </span>
                                        <button
                                           onClick={() => updateQuantity(item._id, item.menuItem._id, item.quantity + 1)}
-                                          className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-r-xl transition'
+                                          className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-r-xl transition cursor-pointer'
                                        >
                                           +
                                        </button>

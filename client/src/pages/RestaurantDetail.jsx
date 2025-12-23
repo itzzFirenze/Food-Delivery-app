@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FaStar, FaSearch, FaShoppingCart } from 'react-icons/fa';
+import { toast, Toaster } from 'react-hot-toast';
 import API from '../services/api';
 
 const RestaurantDetail = () => {
@@ -34,23 +35,19 @@ const RestaurantDetail = () => {
       fetchData();
    }, [id]);
 
-   // Updated addToCart function to call the API
    const addToCart = async (itemId) => {
       try {
-         // Optimistically update UI
          setCart(prev => ({
             ...prev,
             [itemId]: (prev[itemId] || 0) + 1
          }));
 
-         // Call the API to add item to cart
          await API.post('/cart/add', {
             menuItemId: itemId,
             quantity: 1
          });
       } catch (err) {
          console.error('Error adding to cart:', err);
-         // Revert the optimistic update on error
          setCart(prev => {
             const newCart = { ...prev };
             if (newCart[itemId] > 1) {
@@ -60,16 +57,14 @@ const RestaurantDetail = () => {
             }
             return newCart;
          });
-         alert('Failed to add item to cart. Please try again.');
+         toast.error('Failed to add item to cart. Please try again.');
       }
    };
 
-   // Updated removeFromCart function to call the API
    const removeFromCart = async (itemId) => {
       try {
          const currentQuantity = cart[itemId];
 
-         // Optimistically update UI
          setCart(prev => {
             const newCart = { ...prev };
             if (newCart[itemId] > 1) {
@@ -81,15 +76,11 @@ const RestaurantDetail = () => {
          });
 
          if (currentQuantity > 1) {
-            // Update quantity
             await API.patch('/cart/update', {
                menuItemId: itemId,
                quantity: currentQuantity - 1
             });
          } else {
-            // Find the cart item _id and delete it
-            // Note: You may need to fetch the cart first to get the item._id
-            // For now, we'll use the update endpoint with quantity 0
             await API.patch('/cart/update', {
                menuItemId: itemId,
                quantity: 0
@@ -97,12 +88,11 @@ const RestaurantDetail = () => {
          }
       } catch (err) {
          console.error('Error removing from cart:', err);
-         // Revert the optimistic update on error
          setCart(prev => ({
             ...prev,
             [itemId]: (prev[itemId] || 0) + 1
          }));
-         alert('Failed to remove item from cart. Please try again.');
+         toast.error('Failed to remove item from cart. Please try again.');
       }
    };
 
@@ -146,6 +136,7 @@ const RestaurantDetail = () => {
 
    return (
       <div className='min-h-screen bg-gray-50'>
+         <Toaster position='top-center' reverseOrder={false} />
          {/* Hero Section */}
          <div className='relative bg-linear-to-br from-gray-200 to-gray-300 h-96'>
             <div

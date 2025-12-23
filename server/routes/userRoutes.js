@@ -10,7 +10,7 @@ router.get('/', verifyToken, async (req, res) => {
       if (req.user.role !== 'admin') {
          return res.status(403).json({ message: "Access denied" });
       }
-      const users = await User.find().select('-password');
+      const users = (await User.find().select('-password').sort({ createdAt: -1 }));
       if (users.length === 0) {
          return res.status(404).json({ message: "No users found" });
       }

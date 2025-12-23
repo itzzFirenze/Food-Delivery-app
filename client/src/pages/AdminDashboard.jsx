@@ -21,11 +21,10 @@ const AdminDashboard = () => {
    const TabButton = ({ name, label, icon: Icon }) => (
       <button
          onClick={() => setActiveTab(name)}
-         className={`px-6 py-3 rounded-lg font-semibold cursor-pointer transition flex items-center gap-2 ${
-            activeTab === name
+         className={`px-6 py-3 rounded-lg font-semibold cursor-pointer transition flex items-center gap-2 ${activeTab === name
                ? 'bg-blue-600 text-white'
                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-         }`}
+            }`}
       >
          <Icon /> {label}
       </button>

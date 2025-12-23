@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { FaEye, FaTrash, FaTimes } from 'react-icons/fa';
+import { toast, Toaster } from 'react-hot-toast';
+import DeleteModal from '../../components/DeleteModal';
 import API from '../../services/api';
 
 const UserTab = () => {
    const [users, setUsers] = useState([]);
    const [loading, setLoading] = useState(true);
    const [selectedUser, setSelectedUser] = useState(null);
+   const [showDeleteModal, setShowDeleteModal] = useState(false);
+   const [userToDelete, setUserToDelete] = useState(null);
+   const [isDeleting, setIsDeleting] = useState(false);
 
    useEffect(() => {
       fetchUsers();
@@ -22,15 +27,24 @@ const UserTab = () => {
       }
    };
 
-   const handleDeleteUser = async (userId) => {
-      if (!window.confirm('Are you sure you want to delete this user?')) return;
+   const openDeleteModal = (user) => {
+      setUserToDelete(user);
+      setShowDeleteModal(true);
+   };
+
+   const handleDeleteUser = async () => {
+      if (!userToDelete) return;
       try {
-         await API.delete(`/users/${userId}`);
-         alert('User deleted successfully!');
+         await API.delete(`/users/${userToDelete?._id}`);
+         toast.success('User deleted successfully!');
          fetchUsers();
          setSelectedUser(null);
+         setShowDeleteModal(false);
+         setUserToDelete(null);
       } catch (err) {
-         alert(err.response?.data?.message || 'Failed to delete user');
+         toast.error(err.response?.data?.message || 'Failed to delete user');
+      } finally {
+         setIsDeleting(false);
       }
    };
 
@@ -38,6 +52,7 @@ const UserTab = () => {
 
    return (
       <div className='bg-white rounded-2xl shadow-sm p-6'>
+         <Toaster position='top-center' reverseOrder={false} />
          <h2 className='text-2xl font-semibold text-gray-900 mb-6'>Users ({users.length})</h2>
          {users.length === 0 ? (
             <div className='text-center py-12 text-gray-600'>No users found</div>
@@ -62,8 +77,16 @@ const UserTab = () => {
                                  }`}>{user.role}</span>
                            </td>
                            <td className='px-6 py-4 whitespace-nowrap text-sm flex gap-2'>
-                              <button onClick={() => setSelectedUser(user)} className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer'><FaEye /></button>
-                              <button onClick={() => handleDeleteUser(user._id)} className='p-2 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer'><FaTrash /></button>
+                              <button
+                                 onClick={() => setSelectedUser(user)}
+                                 className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer'>
+                                 <FaEye />
+                              </button>
+                              <button
+                                 onClick={() => openDeleteModal(user)}
+                                 className='p-2 text-red-600 hover:bg-red-50 rounded-lg cursor-pointer'>
+                                 <FaTrash />
+                              </button>
                            </td>
                         </tr>
                      ))}
@@ -88,12 +111,35 @@ const UserTab = () => {
                      <p><strong>Phone:</strong> {selectedUser.phone || 'N/A'}</p>
                   </div>
                   <div className='mt-6 flex gap-3'>
-                     <button onClick={() => setSelectedUser(null)} className='flex-1 bg-gray-200 py-3 rounded-lg cursor-pointer font-semibold'>Close</button>
-                     <button onClick={() => handleDeleteUser(selectedUser._id)} className='flex-1 bg-red-600 text-white py-3 rounded-lg cursor-pointer font-semibold'>Delete User</button>
+                     <button
+                        onClick={() => setSelectedUser(null)}
+                        className='flex-1 bg-gray-200 py-3 rounded-lg cursor-pointer font-semibold'>
+                        Close
+                     </button>
+                     <button
+                        onClick={() => openDeleteModal(selectedUser)}
+                        className='flex-1 bg-red-600 text-white py-3 rounded-lg cursor-pointer font-semibold'>
+                        Delete User
+                     </button>
                   </div>
                </div>
             </div>
          )}
+
+         <DeleteModal
+            isOpen={showDeleteModal}
+            onClose={() => {
+               setShowDeleteModal(false);
+               setUserToDelete(null);
+            }}
+            onConfirm={handleDeleteUser}
+            title='Delete User'
+            message={`Are you sure you want to delete ${userToDelete?.name}? This action cannot be undone`}
+            confirmText='Delete'
+            cancelText='Cancel'
+            isLoading={isDeleting}
+         />
+
       </div>
    );
 };

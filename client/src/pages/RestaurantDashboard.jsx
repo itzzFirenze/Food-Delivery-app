@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FaStore, FaEdit, FaTrash, FaPlus, FaSave, FaTimes, FaUtensils } from 'react-icons/fa';
+import { toast, Toaster } from 'react-hot-toast';
 import API from '../services/api';
 
 const RestaurantDashboard = () => {
@@ -40,7 +41,6 @@ const RestaurantDashboard = () => {
       try {
          setLoading(true);
 
-         // Fetch restaurant owned by current user
          const restaurantsResponse = await API.get('/restaurants');
          const allRestaurants = restaurantsResponse.data.data || [];
          const userResponse = await API.get('/users/me');
@@ -57,7 +57,6 @@ const RestaurantDashboard = () => {
                isVeg: ownedRestaurant.isVeg || false
             });
 
-            // Fetch menu items for this restaurant
             const menuResponse = await API.get(`/restaurants/${ownedRestaurant._id}/menu`);
             setMenuItems(menuResponse.data.data || []);
          } else {
@@ -78,7 +77,7 @@ const RestaurantDashboard = () => {
       e.preventDefault();
 
       if (!restaurantForm.name || !restaurantForm.address || !restaurantForm.image) {
-         alert('Please fill in all required fields');
+         toast.error('Please fill in all required fields');
          return;
       }
 
@@ -86,11 +85,11 @@ const RestaurantDashboard = () => {
          if (restaurant) {
             // Update existing restaurant
             await API.patch(`/restaurants/${restaurant._id}`, restaurantForm);
-            alert('Restaurant updated successfully!');
+            toast.success('Restaurant updated successfully!');
          } else {
             // Create new restaurant
             await API.post('/restaurants', restaurantForm);
-            alert('Restaurant created successfully!');
+            toast.success('Restaurant created successfully!');
          }
 
          setIsEditingRestaurant(false);
@@ -98,7 +97,7 @@ const RestaurantDashboard = () => {
          fetchRestaurantData();
       } catch (err) {
          console.error('Error saving restaurant:', err);
-         alert(err.response?.data?.message || 'Failed to save restaurant');
+         toast.error(err.response?.data?.message || 'Failed to save restaurant');
       }
    };
 
@@ -109,13 +108,13 @@ const RestaurantDashboard = () => {
 
       try {
          await API.delete(`/restaurants/${restaurant._id}`);
-         alert('Restaurant deleted successfully!');
+         toast.success('Restaurant deleted successfully!');
          setRestaurant(null);
          setMenuItems([]);
          setIsCreatingRestaurant(true);
       } catch (err) {
          console.error('Error deleting restaurant:', err);
-         alert(err.response?.data?.message || 'Failed to delete restaurant');
+         toast.error(err.response?.data?.message || 'Failed to delete restaurant');
       }
    };
 
@@ -123,7 +122,7 @@ const RestaurantDashboard = () => {
       e.preventDefault();
 
       if (!menuForm.title || !menuForm.description || !menuForm.price || !menuForm.image || !menuForm.category) {
-         alert('Please fill in all required fields');
+         toast.error('Please fill in all required fields');
          return;
       }
 
@@ -137,18 +136,18 @@ const RestaurantDashboard = () => {
          if (isEditingMenu && editingMenuId) {
             // Update existing menu item
             await API.patch(`/restaurants/${restaurant._id}/menu/${editingMenuId}`, menuData);
-            alert('Menu item updated successfully!');
+            toast.success('Menu item updated successfully!');
          } else {
             // Create new menu item
             await API.post(`/restaurants/${restaurant._id}/menu`, menuData);
-            alert('Menu item created successfully!');
+            toast.success('Menu item created successfully!');
          }
 
          resetMenuForm();
          fetchRestaurantData();
       } catch (err) {
          console.error('Error saving menu item:', err);
-         alert(err.response?.data?.message || 'Failed to save menu item');
+         toast.error(err.response?.data?.message || 'Failed to save menu item');
       }
    };
 
@@ -173,11 +172,11 @@ const RestaurantDashboard = () => {
 
       try {
          await API.delete(`/restaurants/${restaurant._id}/menu/${itemId}`);
-         alert('Menu item deleted successfully!');
+         toast.success('Menu item deleted successfully!');
          fetchRestaurantData();
       } catch (err) {
          console.error('Error deleting menu item:', err);
-         alert(err.response?.data?.message || 'Failed to delete menu item');
+         toast.error(err.response?.data?.message || 'Failed to delete menu item');
       }
    };
 
@@ -221,6 +220,7 @@ const RestaurantDashboard = () => {
 
    return (
       <div className='min-h-screen bg-gray-50'>
+         <Toaster position='top-center' reverseOrder={false} />
          <div className='max-w-7xl mx-auto px-4 py-8'>
             {/* Header */}
             <div className='mb-8'>
@@ -264,13 +264,13 @@ const RestaurantDashboard = () => {
                            <div className='flex gap-3'>
                               <button
                                  onClick={() => setIsEditingRestaurant(true)}
-                                 className='flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition'
+                                 className='flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition cursor-pointer'
                               >
                                  <FaEdit /> Edit
                               </button>
                               <button
                                  onClick={handleDeleteRestaurant}
-                                 className='flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg transition'
+                                 className='flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg transition cursor-pointer'
                               >
                                  <FaTrash /> Delete
                               </button>
@@ -357,7 +357,7 @@ const RestaurantDashboard = () => {
                                  id='isVeg'
                                  checked={restaurantForm.isVeg}
                                  onChange={(e) => setRestaurantForm({ ...restaurantForm, isVeg: e.target.checked })}
-                                 className='w-4 h-4 text-blue-600 rounded'
+                                 className='w-4 h-4 text-blue-600 rounded cursor-pointer'
                               />
                               <label htmlFor='isVeg' className='text-sm font-medium text-gray-700'>
                                  Pure Vegetarian Restaurant
@@ -367,7 +367,7 @@ const RestaurantDashboard = () => {
                            <div className='flex gap-3 pt-4'>
                               <button
                                  type='submit'
-                                 className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition'
+                                 className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition cursor-pointer'
                               >
                                  <FaSave /> {restaurant ? 'Update Restaurant' : 'Create Restaurant'}
                               </button>
@@ -383,7 +383,7 @@ const RestaurantDashboard = () => {
                                           isVeg: restaurant.isVeg || false
                                        });
                                     }}
-                                    className='flex-1 flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition'
+                                    className='flex-1 flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition cursor-pointer'
                                  >
                                     <FaTimes /> Cancel
                                  </button>

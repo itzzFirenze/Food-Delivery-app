@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { toast, Toaster } from 'react-hot-toast';
 import API from '../services/api';
 import AuthContext from '../context/AuthContext';
 
@@ -43,6 +44,7 @@ const Profile = () => {
       } catch (err) {
          console.error('Error fetching profile:', err);
          setError('Failed to load profile');
+         toast.error('Could not load profile data');
       } finally {
          setLoading(false);
       }
@@ -63,6 +65,11 @@ const Profile = () => {
    };
 
    const handleUpdateProfile = async () => {
+      if (!profileData.name || !profileData.email) {
+         toast.error("Name and Email are required!");
+         return;
+      }
+
       try {
          setSaving(true);
          const updateData = {
@@ -77,11 +84,11 @@ const Profile = () => {
             setUser(response.data.data);
          }
 
-         alert('Profile updated successfully!');
+         toast.success('Profile updated successfully!');
          setEditMode(false);
       } catch (err) {
          console.error('Error updating profile:', err);
-         alert(err.response?.data?.message || 'Failed to update profile');
+         toast.error(err.response?.data?.message || 'Failed to update profile');
       } finally {
          setSaving(false);
       }
@@ -89,12 +96,12 @@ const Profile = () => {
 
    const handleUpdatePassword = async () => {
       if (passwordData.newPassword !== passwordData.confirmPassword) {
-         alert('New passwords do not match');
+         toast.error('New passwords do not match');
          return;
       }
 
       if (passwordData.newPassword.length < 6) {
-         alert('New password must be at least 6 characters');
+         toast.error('New password must be at least 6 characters');
          return;
       }
 
@@ -105,7 +112,7 @@ const Profile = () => {
             newPassword: passwordData.newPassword
          });
 
-         alert('Password updated successfully!');
+         toast.success('Password updated successfully!');
          setPasswordMode(false);
          setPasswordData({
             oldPassword: '',
@@ -114,7 +121,7 @@ const Profile = () => {
          });
       } catch (err) {
          console.error('Error updating password:', err);
-         alert(err.response?.data?.message || 'Failed to update password');
+         toast.error(err.response?.data?.message || 'Failed to update password');
       } finally {
          setSaving(false);
       }
@@ -172,6 +179,7 @@ const Profile = () => {
 
    return (
       <div className='min-h-screen bg-gray-50'>
+         <Toaster position='top-center' reverseOrder={false}/>
          <div className='max-w-4xl mx-auto px-4 py-8'>
             {/* Header */}
             <div className='mb-8'>
@@ -336,14 +344,14 @@ const Profile = () => {
                                  <button
                                     onClick={handleUpdatePassword}
                                     disabled={saving}
-                                    className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition disabled:bg-gray-400'
+                                    className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition disabled:bg-gray-400 cursor-pointer'
                                  >
                                     <FaSave /> {saving ? 'Updating...' : 'Update Password'}
                                  </button>
                                  <button
                                     onClick={handleCancel}
                                     disabled={saving}
-                                    className='flex-1 flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition'
+                                    className='flex-1 flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition cursor-pointer'
                                  >
                                     <FaTimes /> Cancel
                                  </button>

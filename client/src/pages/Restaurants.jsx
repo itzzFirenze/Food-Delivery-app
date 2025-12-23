@@ -97,7 +97,7 @@ const Restaurants = () => {
                      {/* Veg Toggle Pill */}
                      <button
                         onClick={() => setIsVegOnly(!isVegOnly)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all whitespace-nowrap ${
+                        className={`cursor-pointer flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-all whitespace-nowrap ${
                            isVegOnly 
                               ? 'bg-green-50 border-green-500 text-green-700 shadow-sm' 
                               : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
