@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { FaStar, FaSearch, FaShoppingCart } from 'react-icons/fa';
 import API from '../services/api';
 
@@ -22,7 +22,6 @@ const RestaurantDetail = () => {
                API.get(`/restaurants/${id}`),
                API.get(`/restaurants/${id}/menu`)
             ]);
-
             setRestaurant(restaurantRes.data.data);
             setMenuItems(menuRes.data.data);
             setLoading(false);
@@ -32,37 +31,87 @@ const RestaurantDetail = () => {
             setLoading(false);
          }
       };
-
       fetchData();
    }, [id]);
 
-   const addToCart = (itemId) => {
-      setCart(prev => ({
-         ...prev,
-         [itemId]: (prev[itemId] || 0) + 1
-      }));
+   // Updated addToCart function to call the API
+   const addToCart = async (itemId) => {
+      try {
+         // Optimistically update UI
+         setCart(prev => ({
+            ...prev,
+            [itemId]: (prev[itemId] || 0) + 1
+         }));
+
+         // Call the API to add item to cart
+         await API.post('/cart/add', {
+            menuItemId: itemId,
+            quantity: 1
+         });
+      } catch (err) {
+         console.error('Error adding to cart:', err);
+         // Revert the optimistic update on error
+         setCart(prev => {
+            const newCart = { ...prev };
+            if (newCart[itemId] > 1) {
+               newCart[itemId] -= 1;
+            } else {
+               delete newCart[itemId];
+            }
+            return newCart;
+         });
+         alert('Failed to add item to cart. Please try again.');
+      }
    };
 
-   const removeFromCart = (itemId) => {
-      setCart(prev => {
-         const newCart = { ...prev };
-         if (newCart[itemId] > 1) {
-            newCart[itemId] -= 1;
+   // Updated removeFromCart function to call the API
+   const removeFromCart = async (itemId) => {
+      try {
+         const currentQuantity = cart[itemId];
+
+         // Optimistically update UI
+         setCart(prev => {
+            const newCart = { ...prev };
+            if (newCart[itemId] > 1) {
+               newCart[itemId] -= 1;
+            } else {
+               delete newCart[itemId];
+            }
+            return newCart;
+         });
+
+         if (currentQuantity > 1) {
+            // Update quantity
+            await API.patch('/cart/update', {
+               menuItemId: itemId,
+               quantity: currentQuantity - 1
+            });
          } else {
-            delete newCart[itemId];
+            // Find the cart item _id and delete it
+            // Note: You may need to fetch the cart first to get the item._id
+            // For now, we'll use the update endpoint with quantity 0
+            await API.patch('/cart/update', {
+               menuItemId: itemId,
+               quantity: 0
+            });
          }
-         return newCart;
-      });
+      } catch (err) {
+         console.error('Error removing from cart:', err);
+         // Revert the optimistic update on error
+         setCart(prev => ({
+            ...prev,
+            [itemId]: (prev[itemId] || 0) + 1
+         }));
+         alert('Failed to remove item from cart. Please try again.');
+      }
    };
 
    const filteredMenu = menuItems.filter(item => {
       const matchesSearch = item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
          item.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
       if (filterVeg && filterNonVeg) return matchesSearch;
       if (filterVeg) return matchesSearch && item.veg === true;
       if (filterNonVeg) return matchesSearch && item.veg === false;
-
       return matchesSearch;
    });
 
@@ -108,7 +157,6 @@ const RestaurantDetail = () => {
                   <h1 className='text-4xl font-bold text-gray-900 mb-2'>{restaurant.name}</h1>
                   <p className='text-xl text-gray-600 mb-1'>{restaurant.cuisine}</p>
                   <p className='text-lg text-gray-500'>{restaurant.address}</p>
-
                   {/* Rating Badge */}
                   <div className='absolute top-8 right-8 bg-white rounded-2xl px-4 py-3 shadow-lg flex items-center gap-2'>
                      <FaStar className='text-yellow-500 text-xl' />
@@ -137,7 +185,6 @@ const RestaurantDetail = () => {
                      </div>
                      <span className='font-medium'>Veg</span>
                   </button>
-
                   <button
                      onClick={() => setFilterNonVeg(!filterNonVeg)}
                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full border-2 cursor-pointer transition-all ${filterNonVeg
@@ -210,7 +257,6 @@ const RestaurantDetail = () => {
                                     </div>
                                  )}
                               </div>
-
                               <div className='-mt-6 z-10'>
                                  {cart[item._id] > 0 ? (
                                     <div className='flex items-center gap-4 bg-blue-600 rounded-2xl shadow-md'>
@@ -254,20 +300,22 @@ const RestaurantDetail = () => {
          </div>
 
          {/* Floating Cart Button */}
-         {cartCount > 0 && (
-            <div className='fixed bottom-8 right-8 z-50'>
-               <button className='bg-blue-600 hover:bg-blue-700 text-white rounded-full p-5 shadow-2xl transition-all hover:scale-110 relative group'>
-                  <FaShoppingCart className='text-2xl' />
-                  <span className='absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center'>
-                     {cartCount}
-                  </span>
-                  {/* Tooltip */}
-                  <div className='absolute bottom-full right-0 mb-2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity'>
-                     {cartCount} items • ₹{cartTotal}
-                  </div>
-               </button>
-            </div>
-         )}
+         <Link to='/cart'>
+            {cartCount > 0 && (
+               <div className='fixed bottom-8 right-8 z-50'>
+                  <button className='bg-blue-600 hover:bg-blue-700 text-white rounded-full p-5 shadow-2xl transition-all hover:scale-110 relative group'>
+                     <FaShoppingCart className='text-2xl' />
+                     <span className='absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center'>
+                        {cartCount}
+                     </span>
+                     {/* Tooltip */}
+                     <div className='absolute bottom-full right-0 mb-2 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity'>
+                        {cartCount} items • ₹{cartTotal}
+                     </div>
+                  </button>
+               </div>
+            )}
+         </Link>
       </div>
    );
 };

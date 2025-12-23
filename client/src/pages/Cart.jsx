@@ -1,0 +1,530 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { FaShoppingCart, FaTrash, FaTag } from 'react-icons/fa';
+import API from '../services/api';
+
+const Cart = () => {
+   const navigate = useNavigate();
+   const [cart, setCart] = useState(null);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState(null);
+   const [address, setAddress] = useState({
+      street: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      phone: ''
+   });
+   const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
+
+   // Coupon states
+   const [couponCode, setCouponCode] = useState('');
+   const [appliedCoupon, setAppliedCoupon] = useState(null);
+   const [couponError, setCouponError] = useState('');
+   const [couponLoading, setCouponLoading] = useState(false);
+
+   useEffect(() => {
+      fetchCart();
+   }, []);
+
+   const fetchCart = async (showLoading = true) => {
+      try {
+         if (showLoading) {
+            setLoading(true);
+         }
+         const response = await API.get('/cart');
+         setCart(response.data.data);
+      } catch (err) {
+         console.error('Error fetching cart:', err);
+         if (err.response?.status === 404) {
+            setCart({ items: [] });
+         } else {
+            setError('Failed to load cart');
+         }
+         setLoading(false);
+      } finally {
+         if (showLoading) {
+            setLoading(false);
+         }
+      }
+   };
+
+   const updateQuantity = async (itemId, menuItemId, newQuantity) => {
+      if (newQuantity < 1) {
+         removeItem(itemId);
+         return;
+      }
+
+      try {
+         await API.patch('/cart/update', {
+            menuItemId: menuItemId,
+            quantity: newQuantity
+         });
+         fetchCart(false);
+      } catch (err) {
+         console.error('Error updating quantity:', err);
+         alert('Failed to update quantity');
+      }
+   };
+
+   const removeItem = async (itemId) => {
+      try {
+         await API.delete(`/cart/item/${itemId}`);
+         fetchCart(false);
+      } catch (err) {
+         console.error('Error removing item:', err);
+         alert('Failed to remove item');
+      }
+   };
+
+   const clearCart = async () => {
+      if (!window.confirm('Are you sure you want to clear your cart?')) {
+         return;
+      }
+
+      try {
+         await API.delete('/cart/clear');
+         setAppliedCoupon(null);
+         setCouponCode('');
+         fetchCart();
+      } catch (err) {
+         console.error('Error clearing cart:', err);
+         alert('Failed to clear cart');
+      }
+   };
+
+   const validateCoupon = async () => {
+      if (!couponCode.trim()) {
+         setCouponError('Please enter a coupon code');
+         return;
+      }
+
+      setCouponLoading(true);
+      setCouponError('');
+
+      try {
+         const response = await API.get(`/coupons/validate/${couponCode.trim()}`);
+         setAppliedCoupon(response.data.data);
+         setCouponError('');
+         alert('Coupon applied successfully!');
+      } catch (err) {
+         console.error('Error validating coupon:', err);
+         setCouponError(err.response?.data?.message || 'Invalid coupon code');
+         setAppliedCoupon(null);
+      } finally {
+         setCouponLoading(false);
+      }
+   };
+
+   const removeCoupon = () => {
+      setAppliedCoupon(null);
+      setCouponCode('');
+      setCouponError('');
+   };
+
+   const calculateSubtotal = () => {
+      if (!cart || !cart.items) return 0;
+      return cart.items.reduce((total, item) => {
+         return total + (item.menuItem?.price || 0) * item.quantity;
+      }, 0);
+   };
+
+   const calculateTax = () => {
+      return calculateSubtotal() * 0.05; // 5% tax
+   };
+
+   const calculateDeliveryFee = () => {
+      return calculateSubtotal() > 0 ? 40 : 0;
+   };
+
+   const calculateDiscount = () => {
+      if (!appliedCoupon) return 0;
+
+      const subtotal = calculateSubtotal();
+
+      if (appliedCoupon.discountType === 'percentage') {
+         return (subtotal * appliedCoupon.discountValue) / 100;
+      } else {
+         return appliedCoupon.discountValue;
+      }
+   };
+
+   const calculateTotal = () => {
+      return calculateSubtotal() + calculateTax() + calculateDeliveryFee() - calculateDiscount();
+   };
+
+   const handlePlaceOrder = async () => {
+      if (!cart || cart.items.length === 0) {
+         alert('Your cart is empty');
+         return;
+      }
+
+      if (!address.street || !address.city || !address.state || !address.zipCode || !address.phone) {
+         alert('Please fill in all address fields');
+         return;
+      }
+
+      try {
+         const orderData = {
+            deliveryAddress: {
+               street: address.street,
+               state: address.state,
+               phone: address.phone,
+               zipCode: address.zipCode,
+               city: address.city
+            },
+            paymentMethod: paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1),
+            couponCode: appliedCoupon?.code || undefined
+         };
+
+         await API.post('/orders', orderData);
+         alert("Order placed successfully");
+         setAppliedCoupon(null);
+         setCouponCode('');
+         setAddress({
+            street: '',
+            city: '',
+            phone: '',
+            state: '',
+            zipCode: ''
+         });
+         navigate('/orders');
+      } catch (error) {
+         console.error('Error placing order: ', error);
+         alert(error.response?.data?.message || 'Failed to place order. Please try again.');
+      }
+   };
+
+   if (loading) {
+      return (
+         <div className='flex justify-center items-center min-h-screen bg-gray-50'>
+            <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500'></div>
+         </div>
+      );
+   }
+
+   if (error) {
+      return (
+         <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
+            <div className='text-center'>
+               <div className='text-red-500 font-semibold text-lg mb-4'>{error}</div>
+               <button
+                  onClick={fetchCart}
+                  className='bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition'
+               >
+                  Try Again
+               </button>
+            </div>
+         </div>
+      );
+   }
+
+   const isEmpty = !cart || !cart.items || cart.items.length === 0;
+
+   return (
+      <div className='min-h-screen bg-gray-50'>
+         {/* Main Content */}
+         <div className='max-w-7xl mx-auto px-4 py-8'>
+            <div className='flex items-center justify-between mb-8'>
+               <h1 className='text-4xl font-bold text-gray-900'>Shopping Cart</h1>
+               {!isEmpty && (
+                  <button
+                     onClick={clearCart}
+                     className='text-red-500 hover:text-red-700 font-medium flex items-center gap-2 transition'
+                  >
+                     <FaTrash /> Clear Cart
+                  </button>
+               )}
+            </div>
+
+            {isEmpty ? (
+               <div className='bg-white rounded-3xl p-16 text-center shadow-sm'>
+                  <div className='text-6xl mb-4'>🛒</div>
+                  <h2 className='text-2xl font-semibold text-gray-700 mb-2'>Your cart is empty</h2>
+                  <p className='text-gray-500 mb-6'>Add some delicious items to get started!</p>
+                  <Link
+                     to='/restaurants'
+                     className='inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-full transition'
+                  >
+                     Browse Restaurants
+                  </Link>
+               </div>
+            ) : (
+               <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
+                  {/* Cart Items */}
+                  <div className='lg:col-span-2 space-y-6'>
+                     {/* Table Header */}
+                     <div className='bg-white rounded-2xl shadow-sm p-6'>
+                        <div className='grid grid-cols-12 gap-4 text-xl font-medium text-gray-700 pb-4 border-b border-gray-200'>
+                           <div className='col-span-4'>Item</div>
+                           <div className='col-span-2 text-center'>Price</div>
+                           <div className='col-span-3 text-center'>Quantity</div>
+                           <div className='col-span-2 text-center'>Total</div>
+                           <div className='col-span-1'></div>
+                        </div>
+
+                        {/* Cart Items */}
+                        <div className='divide-y divide-gray-100'>
+                           {cart.items.map((item) => (
+                              <div key={item._id} className='grid grid-cols-12 gap-4 py-6 items-center'>
+                                 {/* Item Info */}
+                                 <div className='col-span-4 flex items-center gap-4'>
+                                    <div className='w-20 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0'>
+                                       {item.menuItem?.image ? (
+                                          <img
+                                             src={item.menuItem.image}
+                                             alt={item.menuItem.title}
+                                             className='w-full h-full object-cover'
+                                          />
+                                       ) : (
+                                          <div className='w-full h-full flex items-center justify-center text-gray-400 text-xs'>
+                                             No image
+                                          </div>
+                                       )}
+                                    </div>
+                                    <div>
+                                       <h3 className='font-semibold text-gray-900'>{item.menuItem?.title || 'Item'}</h3>
+                                       <div className={`mt-1 w-5 h-5 border-2 rounded flex items-center justify-center ${item.menuItem?.veg ? 'border-green-600' : 'border-red-500'
+                                          }`}>
+                                          <div className={`w-2.5 h-2.5 rounded-full ${item.menuItem?.veg ? 'bg-green-600' : 'bg-red-500'
+                                             }`} />
+                                       </div>
+                                    </div>
+                                 </div>
+
+                                 {/* Price */}
+                                 <div className='col-span-2 text-center'>
+                                    <p className='text-lg font-semibold text-gray-900'>
+                                       ₹{item.menuItem?.price || 0}
+                                    </p>
+                                 </div>
+
+                                 {/* Quantity Controls */}
+                                 <div className='col-span-3 flex justify-center'>
+                                    <div className='flex items-center gap-3 bg-gray-100 rounded-xl'>
+                                       <button
+                                          onClick={() => updateQuantity(item._id, item.menuItem._id, item.quantity - 1)}
+                                          className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-l-xl transition'
+                                       >
+                                          -
+                                       </button>
+                                       <span className='text-lg font-semibold text-gray-900 min-w-8 text-center'>
+                                          {item.quantity}
+                                       </span>
+                                       <button
+                                          onClick={() => updateQuantity(item._id, item.menuItem._id, item.quantity + 1)}
+                                          className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-r-xl transition'
+                                       >
+                                          +
+                                       </button>
+                                    </div>
+                                 </div>
+
+                                 {/* Total */}
+                                 <div className='col-span-2 text-center'>
+                                    <p className='text-lg font-bold text-gray-900'>
+                                       ₹{(item.menuItem?.price || 0) * item.quantity}
+                                    </p>
+                                 </div>
+
+                                 {/* Remove Button */}
+                                 <div className='col-span-1 flex justify-end'>
+                                    <button
+                                       onClick={() => removeItem(item._id)}
+                                       className='text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition'
+                                    >
+                                       <FaTrash />
+                                    </button>
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                     </div>
+
+                     {/* Address Info */}
+                     <div className='bg-white rounded-2xl shadow-sm p-6'>
+                        <h2 className='text-2xl font-semibold text-gray-900 mb-6'>Delivery Address</h2>
+                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                           <input
+                              type='text'
+                              placeholder='Street Address'
+                              value={address.street}
+                              onChange={(e) => setAddress({ ...address, street: e.target.value })}
+                              className='col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                           />
+                           <input
+                              type='text'
+                              placeholder='City'
+                              value={address.city}
+                              onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                              className='px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                           />
+                           <input
+                              type='text'
+                              placeholder='State'
+                              value={address.state}
+                              onChange={(e) => setAddress({ ...address, state: e.target.value })}
+                              className='px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                           />
+                           <input
+                              type='text'
+                              placeholder='ZIP Code'
+                              value={address.zipCode}
+                              onChange={(e) => setAddress({ ...address, zipCode: e.target.value })}
+                              className='px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                           />
+                           <input
+                              type='tel'
+                              placeholder='Phone Number'
+                              value={address.phone}
+                              onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+                              className='px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                           />
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Order Summary Sidebar */}
+                  <div className='space-y-6'>
+                     {/* Coupon Section */}
+                     <div className='bg-white rounded-2xl shadow-sm p-6'>
+                        <h2 className='text-2xl font-semibold text-gray-900 mb-4 flex items-center gap-2'>
+                           <FaTag className='text-blue-600' />
+                           Apply Coupon
+                        </h2>
+
+                        {appliedCoupon ? (
+                           <div className='bg-green-50 border border-green-200 rounded-lg p-4'>
+                              <div className='flex items-center justify-between mb-2'>
+                                 <div className='flex items-center gap-2'>
+                                    <FaTag className='text-green-600' />
+                                    <span className='font-semibold text-green-800'>{appliedCoupon.code}</span>
+                                 </div>
+                                 <button
+                                    onClick={removeCoupon}
+                                    className='text-red-500 hover:text-red-700 text-sm font-medium'
+                                 >
+                                    Remove
+                                 </button>
+                              </div>
+                              <p className='text-sm text-green-700'>
+                                 {appliedCoupon.discountType === 'percentage'
+                                    ? `${appliedCoupon.discountValue}% off`
+                                    : `₹${appliedCoupon.discountValue} off`}
+                              </p>
+                           </div>
+                        ) : (
+                           <div>
+                              <div className='flex gap-2 mb-2'>
+                                 <input
+                                    type='text'
+                                    placeholder='Enter coupon code'
+                                    value={couponCode}
+                                    onChange={(e) => {
+                                       setCouponCode(e.target.value.toUpperCase());
+                                       setCouponError('');
+                                    }}
+                                    className='flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                 />
+                                 <button
+                                    onClick={validateCoupon}
+                                    disabled={couponLoading}
+                                    className='bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed'
+                                 >
+                                    {couponLoading ? 'Checking...' : 'Apply'}
+                                 </button>
+                              </div>
+                              {couponError && (
+                                 <p className='text-red-500 text-sm mt-2'>{couponError}</p>
+                              )}
+                           </div>
+                        )}
+                     </div>
+
+                     {/* Order Details */}
+                     <div className='bg-white rounded-2xl shadow-sm p-6 sticky top-4'>
+                        <h2 className='text-2xl font-semibold text-gray-900 mb-6'>Order Summary</h2>
+
+                        <div className='space-y-4 mb-6'>
+                           <div className='flex justify-between text-gray-700'>
+                              <span>Subtotal</span>
+                              <span className='font-semibold'>₹{calculateSubtotal().toFixed(2)}</span>
+                           </div>
+                           <div className='flex justify-between text-gray-700'>
+                              <span>Tax (5%)</span>
+                              <span className='font-semibold'>₹{calculateTax().toFixed(2)}</span>
+                           </div>
+                           <div className='flex justify-between text-gray-700'>
+                              <span>Delivery Fee</span>
+                              <span className='font-semibold'>₹{calculateDeliveryFee().toFixed(2)}</span>
+                           </div>
+                           {appliedCoupon && (
+                              <div className='flex justify-between text-green-600'>
+                                 <span>Discount ({appliedCoupon.code})</span>
+                                 <span className='font-semibold'>-₹{calculateDiscount().toFixed(2)}</span>
+                              </div>
+                           )}
+                           <div className='border-t border-gray-200 pt-4'>
+                              <div className='flex justify-between text-xl font-bold text-gray-900'>
+                                 <span>Total</span>
+                                 <span>₹{calculateTotal().toFixed(2)}</span>
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* Payment Method */}
+                        <div className='mb-6'>
+                           <h3 className='text-lg font-semibold text-gray-900 mb-3'>Payment Method</h3>
+                           <div className='space-y-2'>
+                              <label className='flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition'>
+                                 <input
+                                    type='radio'
+                                    name='payment'
+                                    value='cash'
+                                    checked={paymentMethod === 'Cash on Delivery'}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className='w-4 h-4 text-blue-600'
+                                 />
+                                 <span className='font-medium text-gray-700'>Cash on Delivery</span>
+                              </label>
+                              <label className='flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition'>
+                                 <input
+                                    type='radio'
+                                    name='payment'
+                                    value='card'
+                                    checked={paymentMethod === 'Debit Card'}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className='w-4 h-4 text-blue-600'
+                                 />
+                                 <span className='font-medium text-gray-700'>Card Payment</span>
+                              </label>
+                              <label className='flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition'>
+                                 <input
+                                    type='radio'
+                                    name='payment'
+                                    value='upi'
+                                    checked={paymentMethod === 'Online Payment'}
+                                    onChange={(e) => setPaymentMethod(e.target.value)}
+                                    className='w-4 h-4 text-blue-600'
+                                 />
+                                 <span className='font-medium text-gray-700'>UPI</span>
+                              </label>
+                           </div>
+                        </div>
+
+                        <button
+                           onClick={handlePlaceOrder}
+                           className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-4 rounded-xl transition shadow-md hover:shadow-lg'
+                        >
+                           Place Order
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            )}
+         </div>
+      </div>
+   );
+};
+
+export default Cart;

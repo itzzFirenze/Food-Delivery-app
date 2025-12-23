@@ -136,11 +136,11 @@ router.delete('/:id', verifyToken, async (req, res) => {
 router.get('/:id/menu', async (req, res) => {
    try {
       const id = req.params.id;
-      const menuItems = await MenuItem.find({ restaurantId: id });
+      const menuItems = await MenuItem.find({ restaurantId: id }).sort({ createdAt: -1 });
 
-      if (menuItems.length === 0) {
-         return res.status(404).json({ message: "No menu items found for this restaurant" });
-      }
+      // if (menuItems.length === 0) {
+      //    return res.status(404).json({ message: "No menu items found for this restaurant" });
+      // }
 
       return res.status(200).json({ data: menuItems });
    } catch (error) {

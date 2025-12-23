@@ -24,6 +24,45 @@ router.post('/', verifyToken, async (req, res) => {
    }
 });
 
+// Update coupon (admin)
+router.patch('/:id', verifyToken, async (req, res) => {
+   try {
+      // Admin check
+      if (req.user.role !== 'admin') {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { id } = req.params;
+      const { code, discountType, discountValue, minOrderAmount, expiryDate, usageLimit } = req.body;
+
+      // Find and update coupon
+      const updatedCoupon = await Coupon.findByIdAndUpdate(
+         id,
+         {
+            code,
+            discountType,
+            discountValue,
+            minOrderAmount,
+            expiryDate,
+            usageLimit
+         },
+         { new: true, runValidators: true }
+      );
+
+      if (!updatedCoupon) {
+         return res.status(404).json({ message: "Coupon not found" });
+      }
+
+      res.status(200).json({
+         message: "Coupon updated",
+         data: updatedCoupon
+      });
+
+   } catch (error) {
+      res.status(500).json({ message: error.message });
+   }
+});
+
 // Admin: Get all coupons
 router.get('/', verifyToken, async (req, res) => {
    try {
@@ -38,11 +77,37 @@ router.get('/', verifyToken, async (req, res) => {
    }
 });
 
+// Delete coupon (admin)
+router.delete('/:id', verifyToken, async (req, res) => {
+   try {
+      // Admin check
+      if (req.user.role !== 'admin') {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { id } = req.params;
+
+      const deletedCoupon = await Coupon.findByIdAndDelete(id);
+
+      if (!deletedCoupon) {
+         return res.status(404).json({ message: "Coupon not found" });
+      }
+
+      res.status(200).json({
+         message: "Coupon deleted successfully"
+      });
+
+   } catch (error) {
+      res.status(500).json({ message: error.message });
+   }
+});
+
+
 // Validate coupon for checkout
 router.get('/validate/:code', async (req, res) => {
    try {
       const { code } = req.params;
-      const coupon = await Coupon.findOne({ code }); // <- FIXED
+      const coupon = await Coupon.findOne({ code });
 
       if (!coupon) {
          return res.status(404).json({ message: "Coupon not found" });
