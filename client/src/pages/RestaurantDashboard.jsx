@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Fragment } from 'react';
 import { FaStore, FaEdit, FaTrash, FaPlus, FaSave, FaTimes, FaUtensils } from 'react-icons/fa';
 import { toast, Toaster } from 'react-hot-toast';
+import { Dialog, Transition } from '@headlessui/react';
+import DeleteModal from '../components/DeleteModal';
 import API from '../services/api';
 
 const RestaurantDashboard = () => {
@@ -8,6 +10,12 @@ const RestaurantDashboard = () => {
    const [menuItems, setMenuItems] = useState([]);
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState(null);
+   const [showRestaurantDeleteModal, setShowRestaurantDeleteModal] = useState(false);
+   const [showMenuDeleteModal, setShowMenuDeleteModal] = useState(false);
+   const [IsDeletingRestaurant, setIsDeletingRestaurant] = useState(false);
+   const [IsDeletingMenu, setIsDeletingMenu] = useState(false);
+   const [restaurantToDelete, setRestaurantToDelete] = useState(null);
+   const [menuToDelete, setMenuToDelete] = useState(null);
    const [activeTab, setActiveTab] = useState('restaurant');
 
    // Restaurant form states
@@ -17,7 +25,7 @@ const RestaurantDashboard = () => {
       image: '',
       isVeg: false
    });
-   const [isEditingRestaurant, setIsEditingRestaurant] = useState(false);
+   const [showRestaurantModal, setShowRestaurantModal] = useState(false);
    const [isCreatingRestaurant, setIsCreatingRestaurant] = useState(false);
 
    // Menu item form states
@@ -31,7 +39,7 @@ const RestaurantDashboard = () => {
    });
    const [isEditingMenu, setIsEditingMenu] = useState(false);
    const [editingMenuId, setEditingMenuId] = useState(null);
-   const [showMenuForm, setShowMenuForm] = useState(false);
+   const [showMenuModal, setShowMenuModal] = useState(false);
 
    useEffect(() => {
       fetchRestaurantData();
@@ -40,12 +48,10 @@ const RestaurantDashboard = () => {
    const fetchRestaurantData = async () => {
       try {
          setLoading(true);
-
          const restaurantsResponse = await API.get('/restaurants');
          const allRestaurants = restaurantsResponse.data.data || [];
          const userResponse = await API.get('/users/me');
          const userId = userResponse.data.data._id;
-
          const ownedRestaurant = allRestaurants.find(r => r.owner === userId);
 
          if (ownedRestaurant) {
@@ -56,14 +62,13 @@ const RestaurantDashboard = () => {
                image: ownedRestaurant.image,
                isVeg: ownedRestaurant.isVeg || false
             });
-
             const menuResponse = await API.get(`/restaurants/${ownedRestaurant._id}/menu`);
             setMenuItems(menuResponse.data.data || []);
          } else {
             setRestaurant(null);
             setIsCreatingRestaurant(true);
+            setShowRestaurantModal(true);
          }
-
          setError(null);
       } catch (err) {
          console.error('Error fetching restaurant data:', err);
@@ -73,9 +78,18 @@ const RestaurantDashboard = () => {
       }
    };
 
+   const openRestaurantDeleteModal = (restaurant) => {
+      setRestaurantToDelete(restaurant);
+      setShowRestaurantDeleteModal(true);
+   };
+
+   const openMenuDeleteModal = (menu) => {
+      setMenuToDelete(menu);
+      setShowMenuDeleteModal(true);
+   };
+
    const handleRestaurantSubmit = async (e) => {
       e.preventDefault();
-
       if (!restaurantForm.name || !restaurantForm.address || !restaurantForm.image) {
          toast.error('Please fill in all required fields');
          return;
@@ -83,16 +97,13 @@ const RestaurantDashboard = () => {
 
       try {
          if (restaurant) {
-            // Update existing restaurant
             await API.patch(`/restaurants/${restaurant._id}`, restaurantForm);
             toast.success('Restaurant updated successfully!');
          } else {
-            // Create new restaurant
             await API.post('/restaurants', restaurantForm);
             toast.success('Restaurant created successfully!');
          }
-
-         setIsEditingRestaurant(false);
+         setShowRestaurantModal(false);
          setIsCreatingRestaurant(false);
          fetchRestaurantData();
       } catch (err) {
@@ -102,25 +113,27 @@ const RestaurantDashboard = () => {
    };
 
    const handleDeleteRestaurant = async () => {
-      if (!window.confirm('Are you sure you want to delete your restaurant? This will also delete all menu items.')) {
-         return;
-      }
+      if (!restaurantToDelete) return;
 
       try {
-         await API.delete(`/restaurants/${restaurant._id}`);
+         await API.delete(`/restaurants/${restaurantToDelete._id}`);
          toast.success('Restaurant deleted successfully!');
          setRestaurant(null);
          setMenuItems([]);
+         setShowRestaurantDeleteModal(false);
+         setRestaurantToDelete(null);
          setIsCreatingRestaurant(true);
+         setShowRestaurantModal(true);
       } catch (err) {
          console.error('Error deleting restaurant:', err);
          toast.error(err.response?.data?.message || 'Failed to delete restaurant');
+      } finally {
+         setIsDeletingRestaurant(false);
       }
    };
 
    const handleMenuSubmit = async (e) => {
       e.preventDefault();
-
       if (!menuForm.title || !menuForm.description || !menuForm.price || !menuForm.image || !menuForm.category) {
          toast.error('Please fill in all required fields');
          return;
@@ -134,15 +147,12 @@ const RestaurantDashboard = () => {
          };
 
          if (isEditingMenu && editingMenuId) {
-            // Update existing menu item
             await API.patch(`/restaurants/${restaurant._id}/menu/${editingMenuId}`, menuData);
             toast.success('Menu item updated successfully!');
          } else {
-            // Create new menu item
             await API.post(`/restaurants/${restaurant._id}/menu`, menuData);
             toast.success('Menu item created successfully!');
          }
-
          resetMenuForm();
          fetchRestaurantData();
       } catch (err) {
@@ -162,21 +172,24 @@ const RestaurantDashboard = () => {
       });
       setIsEditingMenu(true);
       setEditingMenuId(item._id);
-      setShowMenuForm(true);
+      setShowMenuModal(true);
    };
 
-   const handleDeleteMenuItem = async (itemId) => {
-      if (!window.confirm('Are you sure you want to delete this menu item?')) {
-         return;
-      }
+   const handleDeleteMenuItem = async () => {
+      if (!menuToDelete) return;
 
       try {
-         await API.delete(`/restaurants/${restaurant._id}/menu/${itemId}`);
+         setIsDeletingMenu(true);
+         await API.delete(`/restaurants/${restaurant._id}/menu/${menuToDelete._id}`);
          toast.success('Menu item deleted successfully!');
          fetchRestaurantData();
+         setShowMenuDeleteModal(false);
+         setMenuToDelete(null);
       } catch (err) {
          console.error('Error deleting menu item:', err);
          toast.error(err.response?.data?.message || 'Failed to delete menu item');
+      } finally {
+         setIsDeletingMenu(false);
       }
    };
 
@@ -191,7 +204,19 @@ const RestaurantDashboard = () => {
       });
       setIsEditingMenu(false);
       setEditingMenuId(null);
-      setShowMenuForm(false);
+      setShowMenuModal(false);
+   };
+
+   const resetRestaurantModal = () => {
+      if (restaurant) {
+         setRestaurantForm({
+            name: restaurant.name,
+            address: restaurant.address,
+            image: restaurant.image,
+            isVeg: restaurant.isVeg || false
+         });
+      }
+      setShowRestaurantModal(false);
    };
 
    if (loading) {
@@ -221,6 +246,7 @@ const RestaurantDashboard = () => {
    return (
       <div className='min-h-screen bg-gray-50'>
          <Toaster position='top-center' reverseOrder={false} />
+
          <div className='max-w-7xl mx-auto px-4 py-8'>
             {/* Header */}
             <div className='mb-8'>
@@ -257,26 +283,25 @@ const RestaurantDashboard = () => {
             {/* Restaurant Section */}
             {activeTab === 'restaurant' && (
                <div className='bg-white rounded-2xl shadow-sm p-6'>
-                  {restaurant && !isEditingRestaurant ? (
+                  {restaurant ? (
                      <div>
                         <div className='flex items-center justify-between mb-6'>
                            <h2 className='text-2xl font-semibold text-gray-900'>Your Restaurant</h2>
                            <div className='flex gap-3'>
                               <button
-                                 onClick={() => setIsEditingRestaurant(true)}
+                                 onClick={() => setShowRestaurantModal(true)}
                                  className='flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition cursor-pointer'
                               >
                                  <FaEdit /> Edit
                               </button>
                               <button
-                                 onClick={handleDeleteRestaurant}
+                                 onClick={() => openRestaurantDeleteModal(restaurant)}
                                  className='flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg transition cursor-pointer'
                               >
                                  <FaTrash /> Delete
                               </button>
                            </div>
                         </div>
-
                         <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                            <div>
                               <img
@@ -306,90 +331,9 @@ const RestaurantDashboard = () => {
                         </div>
                      </div>
                   ) : (
-                     <div>
-                        <h2 className='text-2xl font-semibold text-gray-900 mb-6'>
-                           {restaurant ? 'Edit Restaurant' : 'Create Your Restaurant'}
-                        </h2>
-
-                        <form onSubmit={handleRestaurantSubmit} className='space-y-4'>
-                           <div>
-                              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                 Restaurant Name *
-                              </label>
-                              <input
-                                 type='text'
-                                 value={restaurantForm.name}
-                                 onChange={(e) => setRestaurantForm({ ...restaurantForm, name: e.target.value })}
-                                 className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                 required
-                              />
-                           </div>
-
-                           <div>
-                              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                 Address *
-                              </label>
-                              <input
-                                 type='text'
-                                 value={restaurantForm.address}
-                                 onChange={(e) => setRestaurantForm({ ...restaurantForm, address: e.target.value })}
-                                 className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                 required
-                              />
-                           </div>
-
-                           <div>
-                              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                 Image URL *
-                              </label>
-                              <input
-                                 type='text'
-                                 value={restaurantForm.image}
-                                 onChange={(e) => setRestaurantForm({ ...restaurantForm, image: e.target.value })}
-                                 className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                 required
-                              />
-                           </div>
-
-                           <div className='flex items-center gap-3'>
-                              <input
-                                 type='checkbox'
-                                 id='isVeg'
-                                 checked={restaurantForm.isVeg}
-                                 onChange={(e) => setRestaurantForm({ ...restaurantForm, isVeg: e.target.checked })}
-                                 className='w-4 h-4 text-blue-600 rounded cursor-pointer'
-                              />
-                              <label htmlFor='isVeg' className='text-sm font-medium text-gray-700'>
-                                 Pure Vegetarian Restaurant
-                              </label>
-                           </div>
-
-                           <div className='flex gap-3 pt-4'>
-                              <button
-                                 type='submit'
-                                 className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition cursor-pointer'
-                              >
-                                 <FaSave /> {restaurant ? 'Update Restaurant' : 'Create Restaurant'}
-                              </button>
-                              {restaurant && (
-                                 <button
-                                    type='button'
-                                    onClick={() => {
-                                       setIsEditingRestaurant(false);
-                                       setRestaurantForm({
-                                          name: restaurant.name,
-                                          address: restaurant.address,
-                                          image: restaurant.image,
-                                          isVeg: restaurant.isVeg || false
-                                       });
-                                    }}
-                                    className='flex-1 flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition cursor-pointer'
-                                 >
-                                    <FaTimes /> Cancel
-                                 </button>
-                              )}
-                           </div>
-                        </form>
+                     <div className='text-center py-12'>
+                        <div className='text-6xl mb-4'>🏪</div>
+                        <p className='text-gray-600 mb-4'>No restaurant found. Create one to get started!</p>
                      </div>
                   )}
                </div>
@@ -399,132 +343,16 @@ const RestaurantDashboard = () => {
             {activeTab === 'menu' && restaurant && (
                <div className='space-y-6'>
                   {/* Add Menu Button */}
-                  {!showMenuForm && (
-                     <button
-                        onClick={() => setShowMenuForm(true)}
-                        className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg transition flex items-center justify-center gap-2 cursor-pointer'
-                     >
-                        <FaPlus /> Add New Menu Item
-                     </button>
-                  )}
-
-                  {/* Menu Form */}
-                  {showMenuForm && (
-                     <div className='bg-white rounded-2xl shadow-sm p-6'>
-                        <h2 className='text-2xl font-semibold text-gray-900 mb-6'>
-                           {isEditingMenu ? 'Edit Menu Item' : 'Add New Menu Item'}
-                        </h2>
-
-                        <form onSubmit={handleMenuSubmit} className='space-y-4'>
-                           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                              <div>
-                                 <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                    Item Name *
-                                 </label>
-                                 <input
-                                    type='text'
-                                    value={menuForm.title}
-                                    onChange={(e) => setMenuForm({ ...menuForm, title: e.target.value })}
-                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                    required
-                                 />
-                              </div>
-
-                              <div>
-                                 <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                    Category *
-                                 </label>
-                                 <select
-                                    value={menuForm.category}
-                                    onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value })}
-                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                    required
-                                 >
-                                    <option value="">Select Category</option>
-                                    <option value="Starters">Starters</option>
-                                    <option value="Main Course">Main Course</option>
-                                    <option value="Beverages">Beverages</option>
-                                    <option value="Desserts">Desserts</option>
-                                 </select>
-                              </div>
-
-                              <div>
-                                 <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                    Price (₹) *
-                                 </label>
-                                 <input
-                                    type='number'
-                                    step='0.01'
-                                    value={menuForm.price}
-                                    onChange={(e) => setMenuForm({ ...menuForm, price: e.target.value })}
-                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                    required
-                                 />
-                              </div>
-                              <div>
-                                 <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                    Image URL *
-                                 </label>
-                                 <input
-                                    type='text'
-                                    value={menuForm.image}
-                                    onChange={(e) => setMenuForm({ ...menuForm, image: e.target.value })}
-                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                    required
-                                 />
-                              </div>
-                           </div>
-
-
-                           <div>
-                              <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                 Description *
-                              </label>
-                              <textarea
-                                 value={menuForm.description}
-                                 onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })}
-                                 rows={3}
-                                 className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                 required
-                              />
-                           </div>
-
-                           <div className='flex items-center gap-3'>
-                              <input
-                                 type='checkbox'
-                                 id='veg'
-                                 checked={menuForm.veg}
-                                 onChange={(e) => setMenuForm({ ...menuForm, veg: e.target.checked })}
-                                 className='w-4 h-4 text-blue-600 rounded cursor-pointer'
-                              />
-                              <label htmlFor='veg' className='text-sm font-medium text-gray-700'>
-                                 Vegetarian Item
-                              </label>
-                           </div>
-
-                           <div className='flex gap-3 pt-4'>
-                              <button
-                                 type='submit'
-                                 className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition cursor-pointer'
-                              >
-                                 <FaSave /> {isEditingMenu ? 'Update Item' : 'Add Item'}
-                              </button>
-                              <button
-                                 type='button'
-                                 onClick={resetMenuForm}
-                                 className='flex-1 flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition cursor-pointer'
-                              >
-                                 <FaTimes /> Cancel
-                              </button>
-                           </div>
-                        </form>
-                     </div>
-                  )}
+                  <button
+                     onClick={() => setShowMenuModal(true)}
+                     className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg transition flex items-center justify-center gap-2 cursor-pointer'
+                  >
+                     <FaPlus /> Add New Menu Item
+                  </button>
 
                   {/* Menu Items List */}
                   <div className='bg-white rounded-2xl shadow-sm p-6'>
                      <h2 className='text-2xl font-semibold text-gray-900 mb-6'>Menu Items ({menuItems.length})</h2>
-
                      {menuItems.length === 0 ? (
                         <div className='text-center py-12'>
                            <div className='text-6xl mb-4'>🍽️</div>
@@ -559,7 +387,7 @@ const RestaurantDashboard = () => {
                                              <FaEdit />
                                           </button>
                                           <button
-                                             onClick={() => handleDeleteMenuItem(item._id)}
+                                             onClick={() => openMenuDeleteModal(item)}
                                              className='p-2 text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer'
                                           >
                                              <FaTrash />
@@ -573,8 +401,280 @@ const RestaurantDashboard = () => {
                      )}
                   </div>
                </div>
+
             )}
+            <DeleteModal
+               isOpen={showRestaurantDeleteModal}
+               onClose={() => {
+                  setShowRestaurantDeleteModal(false);
+                  setRestaurantToDelete(null);
+               }}
+               onConfirm={handleDeleteRestaurant}
+               title='Delete Restaurant'
+               message={`Are you sure you want to delete restaurant "${restaurantToDelete?.name}"? This action cannot be undone.`}
+               confirmText='Delete'
+               cancelText='Cancel'
+               isLoading={IsDeletingRestaurant}
+            />
          </div>
+
+         <DeleteModal
+            isOpen={showMenuDeleteModal}
+            onClose={() => {
+               setShowMenuDeleteModal(false);
+               setMenuToDelete(null);
+            }}
+            onConfirm={handleDeleteMenuItem}
+            title='Delete Menu Item'
+            message={`Are you sure you want to delete "${menuToDelete?.title}"? This action cannot be undone.`}
+            confirmText='Delete'
+            cancelText='Cancel'
+            isLoading={IsDeletingMenu}
+         />
+
+         {/* Restaurant Modal */}
+         <Transition appear show={showRestaurantModal} as={Fragment}>
+            <Dialog as="div" className="relative z-50" onClose={resetRestaurantModal}>
+               <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0"
+                  enterTo="opacity-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100"
+                  leaveTo="opacity-0"
+               >
+                  <div className="fixed inset-0 bg-black bg-opacity-25" />
+               </Transition.Child>
+
+               <div className="fixed inset-0 overflow-y-auto">
+                  <div className="flex min-h-full items-center justify-center p-4 text-center">
+                     <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0 scale-95"
+                        enterTo="opacity-100 scale-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100 scale-100"
+                        leaveTo="opacity-0 scale-95"
+                     >
+                        <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                           <Dialog.Title
+                              as="h3"
+                              className="text-2xl font-semibold leading-6 text-gray-900 mb-6"
+                           >
+                              {restaurant ? 'Edit Restaurant' : 'Create Your Restaurant'}
+                           </Dialog.Title>
+
+                           <div className='space-y-4'>
+                              <div>
+                                 <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                    Restaurant Name *
+                                 </label>
+                                 <input
+                                    type='text'
+                                    value={restaurantForm.name}
+                                    onChange={(e) => setRestaurantForm({ ...restaurantForm, name: e.target.value })}
+                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                    required
+                                 />
+                              </div>
+                              <div>
+                                 <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                    Address *
+                                 </label>
+                                 <input
+                                    type='text'
+                                    value={restaurantForm.address}
+                                    onChange={(e) => setRestaurantForm({ ...restaurantForm, address: e.target.value })}
+                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                    required
+                                 />
+                              </div>
+                              <div>
+                                 <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                    Image URL *
+                                 </label>
+                                 <input
+                                    type='text'
+                                    value={restaurantForm.image}
+                                    onChange={(e) => setRestaurantForm({ ...restaurantForm, image: e.target.value })}
+                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                    required
+                                 />
+                              </div>
+                              <div className='flex items-center gap-3'>
+                                 <input
+                                    type='checkbox'
+                                    id='isVeg'
+                                    checked={restaurantForm.isVeg}
+                                    onChange={(e) => setRestaurantForm({ ...restaurantForm, isVeg: e.target.checked })}
+                                    className='w-4 h-4 text-blue-600 rounded cursor-pointer'
+                                 />
+                                 <label htmlFor='isVeg' className='text-sm font-medium text-gray-700'>
+                                    Pure Vegetarian Restaurant
+                                 </label>
+                              </div>
+                              <div className='flex gap-3 pt-4'>
+                                 <button
+                                    onClick={handleRestaurantSubmit}
+                                    className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition cursor-pointer'
+                                 >
+                                    <FaSave /> {restaurant ? 'Update Restaurant' : 'Create Restaurant'}
+                                 </button>
+                                 {restaurant && (
+                                    <button
+                                       onClick={resetRestaurantModal}
+                                       className='flex-1 flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition cursor-pointer'
+                                    >
+                                       <FaTimes /> Cancel
+                                    </button>
+                                 )}
+                              </div>
+                           </div>
+                        </Dialog.Panel>
+                     </Transition.Child>
+                  </div>
+               </div>
+            </Dialog>
+         </Transition>
+
+         {/* Menu Item Modal */}
+         <Transition appear show={showMenuModal} as={Fragment}>
+            <Dialog as="div" className="relative z-50" onClose={resetMenuForm}>
+               <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0"
+                  enterTo="opacity-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100"
+                  leaveTo="opacity-0"
+               >
+                  <div className="fixed inset-0 bg-black bg-opacity-25" />
+               </Transition.Child>
+
+               <div className="fixed inset-0 overflow-y-auto">
+                  <div className="flex min-h-full items-center justify-center p-4 text-center">
+                     <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0 scale-95"
+                        enterTo="opacity-100 scale-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100 scale-100"
+                        leaveTo="opacity-0 scale-95"
+                     >
+                        <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                           <Dialog.Title
+                              as="h3"
+                              className="text-2xl font-semibold leading-6 text-gray-900 mb-6"
+                           >
+                              {isEditingMenu ? 'Edit Menu Item' : 'Add New Menu Item'}
+                           </Dialog.Title>
+
+                           <div className='space-y-4'>
+                              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Item Name *
+                                    </label>
+                                    <input
+                                       type='text'
+                                       value={menuForm.title}
+                                       onChange={(e) => setMenuForm({ ...menuForm, title: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       required
+                                    />
+                                 </div>
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Category *
+                                    </label>
+                                    <select
+                                       value={menuForm.category}
+                                       onChange={(e) => setMenuForm({ ...menuForm, category: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       required
+                                    >
+                                       <option value="">Select Category</option>
+                                       <option value="Starters">Starters</option>
+                                       <option value="Main Course">Main Course</option>
+                                       <option value="Beverages">Beverages</option>
+                                       <option value="Desserts">Desserts</option>
+                                    </select>
+                                 </div>
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Price (₹) *
+                                    </label>
+                                    <input
+                                       type='number'
+                                       step='0.01'
+                                       value={menuForm.price}
+                                       onChange={(e) => setMenuForm({ ...menuForm, price: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       required
+                                    />
+                                 </div>
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Image URL *
+                                    </label>
+                                    <input
+                                       type='text'
+                                       value={menuForm.image}
+                                       onChange={(e) => setMenuForm({ ...menuForm, image: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       required
+                                    />
+                                 </div>
+                              </div>
+                              <div>
+                                 <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                    Description *
+                                 </label>
+                                 <textarea
+                                    value={menuForm.description}
+                                    onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })}
+                                    rows={3}
+                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                    required
+                                 />
+                              </div>
+                              <div className='flex items-center gap-3'>
+                                 <input
+                                    type='checkbox'
+                                    id='veg'
+                                    checked={menuForm.veg}
+                                    onChange={(e) => setMenuForm({ ...menuForm, veg: e.target.checked })}
+                                    className='w-4 h-4 text-blue-600 rounded cursor-pointer'
+                                 />
+                                 <label htmlFor='veg' className='text-sm font-medium text-gray-700'>
+                                    Vegetarian Item
+                                 </label>
+                              </div>
+                              <div className='flex gap-3 pt-4'>
+                                 <button
+                                    onClick={handleMenuSubmit}
+                                    className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition cursor-pointer'
+                                 >
+                                    <FaSave /> {isEditingMenu ? 'Update Item' : 'Add Item'}
+                                 </button>
+                                 <button
+                                    onClick={resetMenuForm}
+                                    className='flex-1 flex items-center justify-center gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition cursor-pointer'
+                                 >
+                                    <FaTimes /> Cancel
+                                 </button>
+                              </div>
+                           </div>
+                        </Dialog.Panel>
+                     </Transition.Child>
+                  </div>
+               </div>
+            </Dialog>
+         </Transition>
       </div>
    );
 };

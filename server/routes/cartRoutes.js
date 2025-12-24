@@ -71,32 +71,43 @@ router.patch('/update', verifyToken, async (req, res) => {
    try {
       const userId = req.user.id;
       const { menuItemId, quantity } = req.body;
-
-      if (!menuItemId || !quantity) {
+      
+      // Fix: Check for undefined/null instead of falsy values
+      if (!menuItemId || quantity === undefined || quantity === null) {
          return res.status(400).json({ error: "menuItemId and quantity are required" });
       }
-
+      
+      // Validate quantity is a non-negative number
+      if (typeof quantity !== 'number' || quantity < 0) {
+         return res.status(400).json({ error: "quantity must be a non-negative number" });
+      }
+      
       const cart = await Cart.findOne({ userId });
       if (!cart) {
          return res.status(404).json({ message: "Cart not found" });
       }
-
+      
       const itemIndex = cart.items.findIndex(
          item => item.menuItem.toString() === menuItemId
       );
-
+      
       if (itemIndex === -1) {
          return res.status(404).json({ message: "Item not found in cart" });
       }
-
-      cart.items[itemIndex].quantity = quantity;
+      
+      // If quantity is 0, remove the item from cart
+      if (quantity === 0) {
+         cart.items.splice(itemIndex, 1);
+      } else {
+         cart.items[itemIndex].quantity = quantity;
+      }
+      
       await cart.save();
-      return res.status(200).json({ message: "Quantity updated", data: cart });
-
+      return res.status(200).json({ message: "Cart updated", data: cart });
    } catch (error) {
       return res.status(500).json({ message: error.message });
    }
-})
+});
 
 // Delete specific item from cart
 router.delete('/item/:itemId', verifyToken, async (req, res) => {

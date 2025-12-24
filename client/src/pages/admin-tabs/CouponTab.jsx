@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Fragment } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
 import { toast, Toaster } from 'react-hot-toast';
+import { Dialog, Transition } from '@headlessui/react';
 import DeleteModal from '../../components/DeleteModal';
 import API from '../../services/api';
 
 const CouponTab = () => {
    const [coupons, setCoupons] = useState([]);
    const [loading, setLoading] = useState(true);
-   const [showCouponForm, setShowCouponForm] = useState(false);
+   const [showCouponModal, setShowCouponModal] = useState(false);
    const [isEditingCoupon, setIsEditingCoupon] = useState(false);
    const [editingCouponId, setEditingCouponId] = useState(null);
    const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -92,14 +93,14 @@ const CouponTab = () => {
       });
       setIsEditingCoupon(true);
       setEditingCouponId(coupon._id);
-      setShowCouponForm(true);
+      setShowCouponModal(true);
    };
 
    const resetCouponForm = () => {
       setCouponForm({ code: '', discountType: 'percentage', discountValue: '', minOrderAmount: '', expiryDate: '', usageLimit: '' });
       setIsEditingCoupon(false);
       setEditingCouponId(null);
-      setShowCouponForm(false);
+      setShowCouponModal(false);
    };
 
    if (loading) return <div className="p-12 text-center">Loading coupons...</div>;
@@ -107,120 +108,157 @@ const CouponTab = () => {
    return (
       <div className='space-y-6'>
          <Toaster position='top-center' reverseOrder={false} />
-         {!showCouponForm && (
-            <button onClick={() => setShowCouponForm(true)} className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg flex items-center justify-center gap-2 cursor-pointer'>
-               <FaPlus /> Add New Coupon
-            </button>
-         )}
+         
+         <button 
+            onClick={() => setShowCouponModal(true)} 
+            className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-lg flex items-center justify-center gap-2 cursor-pointer transition'
+         >
+            <FaPlus /> Add New Coupon
+         </button>
 
-         {showCouponForm && (
-            <div className='bg-white rounded-2xl shadow-sm p-6'>
-               <h2 className='text-2xl font-semibold mb-6'>{isEditingCoupon ? 'Edit Coupon' : 'Add New Coupon'}</h2>
-               <form onSubmit={handleCouponSubmit} className='space-y-4'>
-                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-2'>
-                           Coupon Code *
-                        </label>
-                        <input
-                           type='text'
-                           value={couponForm.code}
-                           onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
-                           className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                           placeholder='SAVE20'
-                           required
-                        />
-                     </div>
+         {/* Coupon Modal */}
+         <Transition appear show={showCouponModal} as={Fragment}>
+            <Dialog as="div" className="relative z-50" onClose={resetCouponForm}>
+               <Transition.Child
+                  as={Fragment}
+                  enter="ease-out duration-300"
+                  enterFrom="opacity-0"
+                  enterTo="opacity-100"
+                  leave="ease-in duration-200"
+                  leaveFrom="opacity-100"
+                  leaveTo="opacity-0"
+               >
+                  <div className="fixed inset-0 bg-black bg-opacity-25" />
+               </Transition.Child>
 
-                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-2'>
-                           Discount Type *
-                        </label>
-                        <select
-                           value={couponForm.discountType}
-                           onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value })}
-                           className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                           required
-                        >
-                           <option value='percentage'>Percentage (%)</option>
-                           <option value='fixed'>Fixed Amount (₹)</option>
-                        </select>
-                     </div>
-
-                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-2'>
-                           Discount Value *
-                        </label>
-                        <input
-                           type='number'
-                           step='0.01'
-                           value={couponForm.discountValue}
-                           onChange={(e) => setCouponForm({ ...couponForm, discountValue: e.target.value })}
-                           className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                           placeholder={couponForm.discountType === 'percentage' ? '20' : '100'}
-                           required
-                        />
-                     </div>
-
-                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-2'>
-                           Min Order Amount
-                        </label>
-                        <input
-                           type='number'
-                           step='0.01'
-                           value={couponForm.minOrderAmount}
-                           onChange={(e) => setCouponForm({ ...couponForm, minOrderAmount: e.target.value })}
-                           className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                           placeholder='500'
-                        />
-                     </div>
-
-                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-2'>
-                           Expiry Date *
-                        </label>
-                        <input
-                           type='date'
-                           value={couponForm.expiryDate}
-                           onChange={(e) => setCouponForm({ ...couponForm, expiryDate: e.target.value })}
-                           className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                           required
-                        />
-                     </div>
-
-                     <div>
-                        <label className='block text-sm font-medium text-gray-700 mb-2'>
-                           Usage Limit
-                        </label>
-                        <input
-                           type='number'
-                           value={couponForm.usageLimit}
-                           onChange={(e) => setCouponForm({ ...couponForm, usageLimit: e.target.value })}
-                           className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                           placeholder='Unlimited'
-                        />
-                     </div>
-                  </div>
-
-                  <div className='flex gap-3 pt-4'>
-                     <button
-                        type='submit'
-                        className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg cursor-pointer transition'
+               <div className="fixed inset-0 overflow-y-auto">
+                  <div className="flex min-h-full items-center justify-center p-4 text-center">
+                     <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0 scale-95"
+                        enterTo="opacity-100 scale-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100 scale-100"
+                        leaveTo="opacity-0 scale-95"
                      >
-                        <FaSave /> {isEditingCoupon ? 'Update Coupon' : 'Create Coupon'}
-                     </button>
-                     <button
-                        type='button'
-                        onClick={resetCouponForm}
-                        className='flex-1 flex items-center justify-center cursor-pointer gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition'
-                     >
-                        <FaTimes /> Cancel
-                     </button>
+                        <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                           <Dialog.Title
+                              as="h3"
+                              className="text-2xl font-semibold leading-6 text-gray-900 mb-6"
+                           >
+                              {isEditingCoupon ? 'Edit Coupon' : 'Add New Coupon'}
+                           </Dialog.Title>
+                           
+                           <form onSubmit={handleCouponSubmit} className='space-y-4'>
+                              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Coupon Code *
+                                    </label>
+                                    <input
+                                       type='text'
+                                       value={couponForm.code}
+                                       onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       placeholder='SAVE20'
+                                       required
+                                    />
+                                 </div>
+
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Discount Type *
+                                    </label>
+                                    <select
+                                       value={couponForm.discountType}
+                                       onChange={(e) => setCouponForm({ ...couponForm, discountType: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       required
+                                    >
+                                       <option value='percentage'>Percentage (%)</option>
+                                       <option value='fixed'>Fixed Amount (₹)</option>
+                                    </select>
+                                 </div>
+
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Discount Value *
+                                    </label>
+                                    <input
+                                       type='number'
+                                       step='0.01'
+                                       value={couponForm.discountValue}
+                                       onChange={(e) => setCouponForm({ ...couponForm, discountValue: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       placeholder={couponForm.discountType === 'percentage' ? '20' : '100'}
+                                       required
+                                    />
+                                 </div>
+
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Min Order Amount
+                                    </label>
+                                    <input
+                                       type='number'
+                                       step='0.01'
+                                       value={couponForm.minOrderAmount}
+                                       onChange={(e) => setCouponForm({ ...couponForm, minOrderAmount: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       placeholder='500'
+                                    />
+                                 </div>
+
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Expiry Date *
+                                    </label>
+                                    <input
+                                       type='date'
+                                       value={couponForm.expiryDate}
+                                       onChange={(e) => setCouponForm({ ...couponForm, expiryDate: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       required
+                                    />
+                                 </div>
+
+                                 <div>
+                                    <label className='block text-sm font-medium text-gray-700 mb-2'>
+                                       Usage Limit
+                                    </label>
+                                    <input
+                                       type='number'
+                                       value={couponForm.usageLimit}
+                                       onChange={(e) => setCouponForm({ ...couponForm, usageLimit: e.target.value })}
+                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                                       placeholder='Unlimited'
+                                    />
+                                 </div>
+                              </div>
+
+                              <div className='flex gap-3 pt-4'>
+                                 <button
+                                    type='submit'
+                                    className='flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg cursor-pointer transition'
+                                 >
+                                    <FaSave /> {isEditingCoupon ? 'Update Coupon' : 'Create Coupon'}
+                                 </button>
+                                 <button
+                                    type='button'
+                                    onClick={resetCouponForm}
+                                    className='flex-1 flex items-center justify-center cursor-pointer gap-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-3 rounded-lg transition'
+                                 >
+                                    <FaTimes /> Cancel
+                                 </button>
+                              </div>
+                           </form>
+                        </Dialog.Panel>
+                     </Transition.Child>
                   </div>
-               </form>
-            </div>
-         )}
+               </div>
+            </Dialog>
+         </Transition>
 
          <div className='bg-white rounded-2xl shadow-sm p-6'>
             <h2 className='text-2xl font-semibold text-gray-900 mb-6'>Coupons ({coupons.length})</h2>
@@ -293,13 +331,12 @@ const CouponTab = () => {
                   setCouponToDelete(null);
                }}
                onConfirm={handleDeleteCoupon}
-               title='Delete User'
-               message={`Are you sure you want to delete ${couponToDelete?.name}? This action cannot be undone`}
+               title='Delete Coupon'
+               message={`Are you sure you want to delete coupon "${couponToDelete?.code}"? This action cannot be undone.`}
                confirmText='Delete'
                cancelText='Cancel'
                isLoading={isDeleting}
             />
-
          </div>
       </div>
    );

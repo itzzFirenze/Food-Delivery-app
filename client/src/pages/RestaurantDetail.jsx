@@ -270,7 +270,7 @@ const RestaurantDetail = () => {
                                  ) : (
                                     <button
                                        onClick={() => addToCart(item._id)}
-                                       className='w-36 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-2 px-6 rounded-2xl transition-colors shadow-md hover:shadow-lg'
+                                       className='w-36 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-2 px-6 rounded-2xl transition-colors shadow-md hover:shadow-lg cursor-pointer'
                                     >
                                        ADD
                                     </button>
