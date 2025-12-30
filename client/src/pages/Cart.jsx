@@ -329,7 +329,7 @@ const Cart = () => {
                {!isEmpty && (
                   <button
                      onClick={clearCart}
-                     className='text-red-500 hover:text-red-700 font-medium flex items-center gap-2 transition'
+                     className='cursor-pointer text-red-500 hover:text-red-700 font-medium flex items-center gap-2 transition'
                   >
                      <FaTrash /> Clear Cart
                   </button>

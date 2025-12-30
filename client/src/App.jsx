@@ -10,6 +10,7 @@ import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
 import RestaurantDashboard from "./pages/RestaurantDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import ContactUs from "./pages/ContactUs";
 
 const App = () => {
    const location = useLocation();
@@ -29,6 +30,7 @@ const App = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/restaurant-dashboard" element={<RestaurantDashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="contact-us" element={<ContactUs />} />
             <Route path="*" element={<Navigate to="/" />} />
          </Routes>
       </div>

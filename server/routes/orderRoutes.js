@@ -194,7 +194,7 @@ router.patch('/:orderId/cancel', verifyToken, async (req, res) => {
          return res.status(403).json({ message: "Access denied" });
       }
 
-      if (['Delivered', 'Cancelled'].includes(order.status)) {
+      if (['Delivered', 'Cancelled', 'Out for Delivery'].includes(order.status)) {
          return res.status(400).json({ message: `Cannot cancel order with status ${order.status}` });
       }
 

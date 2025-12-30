@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaBox, FaCheckCircle, FaClock, FaTruck, FaTimesCircle, FaReceipt } from 'react-icons/fa';
+import { FaBox, FaCheckCircle, FaClock, FaTruck, FaTimesCircle, FaReceipt, FaBan } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 import API from '../services/api';
 
 const Orders = () => {
@@ -8,6 +9,7 @@ const Orders = () => {
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState(null);
    const [selectedOrder, setSelectedOrder] = useState(null);
+   const [cancellingId, setCancellingId] = useState(null);
 
    useEffect(() => {
       fetchOrders();
@@ -29,6 +31,64 @@ const Orders = () => {
          }
       } finally {
          setLoading(false);
+      }
+   };
+
+   const handleCancelOrder = async (orderId) => {
+      const result = await Swal.fire({
+         title: 'Cancel Order?',
+         text: 'Are you sure you want to cancel this order? This action cannot be undone.',
+         icon: 'warning',
+         showCancelButton: true,
+         confirmButtonColor: '#ef4444',
+         cancelButtonColor: '#6b7280',
+         confirmButtonText: 'Yes, cancel it',
+         cancelButtonText: 'No, keep it',
+         customClass: {
+            popup: 'rounded-2xl',
+            confirmButton: 'rounded-lg px-6 py-2.5 font-semibold',
+            cancelButton: 'rounded-lg px-6 py-2.5 font-semibold'
+         },
+         backdrop: true,
+         allowOutsideClick: false
+      });
+
+      if (result.isConfirmed) {
+         try {
+            setCancellingId(orderId);
+            await API.patch(`/orders/${orderId}/cancel`);
+
+            setOrders((prevOrders) =>
+               prevOrders.map((order) =>
+                  order._id === orderId ? { ...order, status: 'Cancelled' } : order
+               )
+            );
+
+            Swal.fire({
+               title: 'Cancelled!',
+               text: 'Your order has been cancelled successfully.',
+               icon: 'success',
+               timer: 2000,
+               showConfirmButton: false,
+               customClass: {
+                  popup: 'rounded-2xl'
+               }
+            });
+         } catch (err) {
+            console.error('Error cancelling order:', err);
+            Swal.fire({
+               title: 'Error!',
+               text: err.response?.data?.message || 'Failed to cancel order. Please try again.',
+               icon: 'error',
+               confirmButtonColor: '#3b82f6',
+               customClass: {
+                  popup: 'rounded-2xl',
+                  confirmButton: 'rounded-lg px-6 py-2.5 font-semibold'
+               }
+            });
+         } finally {
+            setCancellingId(null);
+         }
       }
    };
 
@@ -200,7 +260,7 @@ const Orders = () => {
                                     </div>
                                  </div>
 
-                                 {/* Order Summary */}
+                                 {/* Order Summary & Actions */}
                                  <div className='space-y-6'>
                                     {/* Delivery Address */}
                                     <div className='bg-gray-50 rounded-xl p-4'>
@@ -235,12 +295,30 @@ const Orders = () => {
                                           </div>
                                        </div>
                                     </div>
+
+                                    {/* Cancel Button */}
+                                    {!['Delivered', 'Cancelled', 'Out for Delivery'].includes(order.status) && (
+                                       <button
+                                          onClick={() => handleCancelOrder(order._id)}
+                                          disabled={cancellingId === order._id}
+                                          className='w-full py-3 px-4 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-semibold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer'
+                                       >
+                                          {cancellingId === order._id ? (
+                                             <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                                          ) : (
+                                             <>
+                                                <FaBan /> Cancel Order
+                                             </>
+                                          )}
+                                       </button>
+                                    )}
+
                                  </div>
                               </div>
                            </div>
                         )}
 
-                        {/* Quick Summary (when collapsed) */}
+                        {/* Quick Summary */}
                         {selectedOrder !== order._id && (
                            <div className='px-6 py-4 flex items-center justify-between'>
                               <div className='flex items-center gap-6'>
