@@ -135,23 +135,22 @@ const RestaurantDetail = () => {
    }, 0);
 
    return (
-      <div className='min-h-screen bg-gray-50'>
+      <div className='min-h-screen bg-gray-50 md:py-0 py-12'>
          <Toaster position='top-center' reverseOrder={false} />
          {/* Hero Section */}
-         <div className='relative bg-linear-to-br from-gray-200 to-gray-300 h-96'>
+         <div className='relative bg-linear-to-br from-gray-200 to-gray-300 md:h-96 h-64'>
             <div
                className='absolute inset-0 bg-cover bg-center opacity-80'
                style={{ backgroundImage: `url(${restaurant.image})` }}
             />
             <div className='relative max-w-7xl mx-auto px-4 h-full flex items-end pb-8'>
                <div className='bg-white rounded-3xl shadow-xl p-8 w-full max-w-4xl'>
-                  <h1 className='text-4xl font-bold text-gray-900 mb-2'>{restaurant.name}</h1>
-                  <p className='text-xl text-gray-600 mb-1'>{restaurant.cuisine}</p>
-                  <p className='text-lg text-gray-500'>{restaurant.address}</p>
+                  <h1 className='md:text-4xl text-3xl font-bold text-gray-900 mb-2'>{restaurant.name}</h1>
+                  <p className='md:text-lg text-md text-gray-500'>{restaurant.address}</p>
                   {/* Rating Badge */}
-                  <div className='absolute top-8 right-8 bg-white rounded-2xl px-4 py-3 shadow-lg flex items-center gap-2'>
-                     <FaStar className='text-yellow-500 text-xl' />
-                     <span className='text-2xl font-bold text-gray-900'>{restaurant.rating || '4.1'}</span>
+                  <div className='absolute top-8 right-8 bg-white rounded-2xl px-3 py-2 shadow-lg flex items-center gap-2'>
+                     <FaStar className='text-yellow-500 md:text-xl text-md' />
+                     <span className='md:text-2xl text-lg font-bold text-gray-900'>{restaurant.rating || '4.1'}</span>
                   </div>
                </div>
             </div>
@@ -162,45 +161,44 @@ const RestaurantDetail = () => {
             <h2 className='text-3xl font-semibold text-gray-900 mb-6'>Menu</h2>
 
             {/* Filters */}
-            <div className='bg-white rounded-2xl shadow-sm p-4 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between'>
-               <div className='flex gap-3 flex-wrap'>
+            <div className='bg-white rounded-2xl shadow-sm p-3 md:p-4 mb-4 md:mb-6 flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center justify-between'>
+               <div className='flex gap-2 w-full md:w-auto'>
                   <button
                      onClick={() => setFilterVeg(!filterVeg)}
-                     className={`flex items-center gap-2 px-5 py-2.5 rounded-full border-2 cursor-pointer transition-all ${filterVeg
+                     className={`flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2.5 rounded-full border-2 cursor-pointer transition-all flex-1 md:flex-initial justify-center ${filterVeg
                         ? 'bg-green-50 border-green-500 text-green-700'
                         : 'bg-white border-gray-300 text-gray-700 hover:border-green-500'
                         }`}
                   >
-                     <div className='w-5 h-5 border-2 border-green-600 rounded flex items-center justify-center'>
-                        {filterVeg && <div className='w-2.5 h-2.5 bg-green-600 rounded-full' />}
+                     <div className='w-4 h-4 md:w-5 md:h-5 border-2 border-green-600 rounded flex items-center justify-center shrink-0'>
+                        {filterVeg && <div className='w-1.5 h-1.5 md:w-2.5 md:h-2.5 bg-green-600 rounded-full' />}
                      </div>
-                     <span className='font-medium'>Veg</span>
+                     <span className='font-medium text-xs md:text-base'>Veg</span>
                   </button>
                   <button
                      onClick={() => setFilterNonVeg(!filterNonVeg)}
-                     className={`flex items-center gap-2 px-5 py-2.5 rounded-full border-2 cursor-pointer transition-all ${filterNonVeg
+                     className={`flex items-center gap-1.5 md:gap-2 px-3 py-1.5 md:px-4 md:py-2.5 rounded-full border-2 cursor-pointer transition-all flex-1 md:flex-initial justify-center ${filterNonVeg
                         ? 'bg-red-50 border-red-500 text-red-700'
                         : 'bg-white border-gray-300 text-gray-700 hover:border-red-500'
                         }`}
                   >
-                     <div className='w-5 h-5 border-2 border-red-500 rounded flex items-center justify-center'>
-                        {filterNonVeg && <div className='w-2.5 h-2.5 bg-red-500 rounded-full' />}
+                     <div className='w-4 h-4 md:w-5 md:h-5 border-2 border-red-500 rounded flex items-center justify-center shrink-0'>
+                        {filterNonVeg && <div className='w-1.5 h-1.5 md:w-2.5 md:h-2.5 bg-red-500 rounded-full' />}
                      </div>
-                     <span className='font-medium'>Non-Veg</span>
+                     <span className='font-medium text-xs md:text-base'>Non-Veg</span>
                   </button>
                </div>
-
                {/* Search Bar */}
                <div className='relative w-full md:w-80'>
-                  <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
-                     <FaSearch className='text-gray-400' />
+                  <div className='absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none'>
+                     <FaSearch className='text-gray-400 text-xs md:text-base' />
                   </div>
                   <input
                      type='text'
                      placeholder='Search menu items...'
                      value={searchQuery}
                      onChange={(e) => setSearchQuery(e.target.value)}
-                     className='w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none'
+                     className='w-full pl-9 pr-3 py-1.5 md:pl-11 md:pr-4 md:py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-xs md:text-sm rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none'
                   />
                </div>
             </div>
@@ -209,33 +207,36 @@ const RestaurantDetail = () => {
             <div className='border-b border-gray-200 mb-6'></div>
 
             {/* Menu Items */}
-            <div className='space-y-6'>
+            <div className='space-y-4 md:space-y-6'>
                {filteredMenu.length > 0 ? (
                   filteredMenu.map((item) => (
                      <div
                         key={item._id}
-                        className='bg-white rounded-3xl shadow-md hover:shadow-lg transition-shadow overflow-hidden'
+                        className='bg-white rounded-2xl md:rounded-3xl shadow-md hover:shadow-lg transition-shadow overflow-hidden'
                      >
-                        <div className='flex flex-col md:flex-row'>
+                        {/* Changed flex-col to flex-row to keep everything in one line on mobile */}
+                        <div className='flex flex-row'>
+
                            {/* Item Details */}
-                           <div className='flex-1 p-8'>
-                              <div className='flex items-start gap-3 mb-3'>
-                                 <div className={`w-6 h-6 border-2 rounded flex items-center justify-center mt-1 ${item.veg ? 'border-green-600' : 'border-red-500'
+                           <div className='flex-1 p-3 md:p-8 flex flex-col justify-center'>
+                              <div className='flex items-start gap-2 md:gap-3'>
+                                 <div className={`w-4 h-4 md:w-6 md:h-6 border-2 rounded flex items-center justify-center mt-1 shrink-0 ${item.veg ? 'border-green-600' : 'border-red-500'
                                     }`}>
-                                    <div className={`w-3 h-3 rounded-full ${item.veg ? 'bg-green-600' : 'bg-red-500'
+                                    <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full ${item.veg ? 'bg-green-600' : 'bg-red-500'
                                        }`} />
                                  </div>
                                  <div className='flex-1'>
-                                    <h3 className='text-xl font-semibold text-gray-900 mb-2'>{item.title}</h3>
-                                    <p className='text-lg font-bold text-gray-900 mb-3'>₹{item.price}</p>
-                                    <p className='text-gray-600 leading-relaxed'>{item.description}</p>
+                                    <h3 className='text-base md:text-xl font-semibold text-gray-900 mb-1 md:mb-2 line-clamp-2 md:line-clamp-none'>{item.title}</h3>
+                                    <p className='text-sm md:text-lg font-bold text-gray-900 mb-0 md:mb-3'>₹{item.price}</p>
+                                    {/* Added hidden md:block to hide description on mobile */}
+                                    <p className='hidden md:block text-base text-gray-600 leading-relaxed'>{item.description}</p>
                                  </div>
                               </div>
                            </div>
 
                            {/* Item Image & Add Button */}
-                           <div className='md:w-72 relative flex flex-col items-center justify-center p-4'>
-                              <div className='w-44 h-44 bg-gray-100 rounded-3xl overflow-hidden shadow-md'>
+                           <div className='w-auto md:w-72 relative flex flex-col items-center justify-center p-3 md:p-4 shrink-0'>
+                              <div className='w-28 h-28 md:w-44 md:h-44 bg-gray-50 md:bg-gray-100 rounded-xl md:rounded-3xl overflow-hidden shadow-sm md:shadow-md'>
                                  {item.image ? (
                                     <img
                                        src={item.image}
@@ -243,26 +244,26 @@ const RestaurantDetail = () => {
                                        className='w-full h-full object-cover'
                                     />
                                  ) : (
-                                    <div className='w-full h-full flex items-center justify-center text-gray-400 text-sm'>
+                                    <div className='w-full h-full flex items-center justify-center text-gray-400 text-xs md:text-sm'>
                                        No image
                                     </div>
                                  )}
                               </div>
-                              <div className='-mt-6 z-10'>
+                              <div className='-mt-4 md:-mt-6 z-10'>
                                  {cart[item._id] > 0 ? (
-                                    <div className='flex items-center gap-4 bg-blue-600 rounded-2xl shadow-md'>
+                                    <div className='flex items-center gap-0 md:gap-4 bg-blue-600 rounded-lg md:rounded-2xl shadow-md'>
                                        <button
                                           onClick={() => removeFromCart(item._id)}
-                                          className='text-white font-bold text-lg px-5 py-2 hover:bg-blue-700 rounded-l-2xl transition-colors cursor-pointer'
+                                          className='text-white font-bold text-sm md:text-lg px-2.5 py-1.5 md:px-5 md:py-2 hover:bg-blue-700 rounded-l-lg md:rounded-l-2xl transition-colors cursor-pointer'
                                        >
                                           -
                                        </button>
-                                       <span className='text-white font-semibold text-lg min-w-4 text-center'>
+                                       <span className='text-white font-semibold text-sm md:text-lg min-w-6 md:min-w-4 text-center'>
                                           {cart[item._id]}
                                        </span>
                                        <button
                                           onClick={() => addToCart(item._id)}
-                                          className='text-white font-bold text-lg px-5 py-2 hover:bg-blue-700 rounded-r-2xl transition-colors cursor-pointer'
+                                          className='text-white font-bold text-sm md:text-lg px-2.5 py-1.5 md:px-5 md:py-2 hover:bg-blue-700 rounded-r-lg md:rounded-r-2xl transition-colors cursor-pointer'
                                        >
                                           +
                                        </button>
@@ -270,7 +271,7 @@ const RestaurantDetail = () => {
                                  ) : (
                                     <button
                                        onClick={() => addToCart(item._id)}
-                                       className='w-36 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-2 px-6 rounded-2xl transition-colors shadow-md hover:shadow-lg cursor-pointer'
+                                       className='w-24 md:w-36 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs md:text-lg py-1.5 md:py-2 px-4 md:px-6 rounded-lg md:rounded-2xl transition-colors shadow-md hover:shadow-lg cursor-pointer'
                                     >
                                        ADD
                                     </button>
@@ -281,10 +282,10 @@ const RestaurantDetail = () => {
                      </div>
                   ))
                ) : (
-                  <div className='bg-white rounded-3xl p-12 text-center'>
-                     <div className='text-5xl mb-4'>🍽️</div>
-                     <h3 className='text-xl font-semibold text-gray-700 mb-2'>No items found</h3>
-                     <p className='text-gray-500'>Try adjusting your filters or search query</p>
+                  <div className='bg-white rounded-2xl md:rounded-3xl p-8 md:p-12 text-center'>
+                     <div className='text-4xl md:text-5xl mb-3 md:mb-4'>🍽️</div>
+                     <h3 className='text-lg md:text-xl font-semibold text-gray-700 mb-1 md:mb-2'>No items found</h3>
+                     <p className='text-sm md:text-base text-gray-500'>Try adjusting your filters or search query</p>
                   </div>
                )}
             </div>
@@ -293,9 +294,9 @@ const RestaurantDetail = () => {
          {/* Floating Cart Button */}
          <Link to='/cart'>
             {cartCount > 0 && (
-               <div className='fixed bottom-8 right-8 z-50'>
-                  <button className='bg-blue-600 hover:bg-blue-700 text-white rounded-full p-5 shadow-2xl transition-all hover:scale-110 relative group cursor-pointer'>
-                     <FaShoppingCart className='text-2xl' />
+               <div className='fixed md:bottom-8 bottom-16 right-8 z-50'>
+                  <button className='bg-blue-600 hover:bg-blue-700 text-white rounded-full md:p-5 p-4 shadow-2xl transition-all hover:scale-110 relative group cursor-pointer'>
+                     <FaShoppingCart className='md:text-2xl text-lg' />
                      <span className='absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center'>
                         {cartCount}
                      </span>

@@ -178,8 +178,8 @@ const Profile = () => {
    }
 
    return (
-      <div className='min-h-screen bg-gray-50'>
-         <Toaster position='top-center' reverseOrder={false}/>
+      <div className='min-h-screen bg-gray-50 md:py-0 py-9'>
+         <Toaster position='top-center' reverseOrder={false} />
          <div className='max-w-4xl mx-auto px-4 py-8'>
             {/* Header */}
             <div className='mb-8'>

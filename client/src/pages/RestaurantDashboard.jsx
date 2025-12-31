@@ -2,6 +2,9 @@ import React, { useEffect, useState, Fragment } from 'react';
 import { FaStore, FaEdit, FaTrash, FaPlus, FaSave, FaTimes, FaUtensils } from 'react-icons/fa';
 import { toast, Toaster } from 'react-hot-toast';
 import { Dialog, Transition } from '@headlessui/react';
+import { FileUploaderRegular } from '@uploadcare/react-uploader';
+import '@uploadcare/react-uploader/core.css';
+
 import DeleteModal from '../components/DeleteModal';
 import API from '../services/api';
 
@@ -40,6 +43,8 @@ const RestaurantDashboard = () => {
    const [isEditingMenu, setIsEditingMenu] = useState(false);
    const [editingMenuId, setEditingMenuId] = useState(null);
    const [showMenuModal, setShowMenuModal] = useState(false);
+
+   const UPLOADCARE_PUB_KEY = "0024e9d244ea0f32b536";
 
    useEffect(() => {
       fetchRestaurantData();
@@ -91,7 +96,7 @@ const RestaurantDashboard = () => {
    const handleRestaurantSubmit = async (e) => {
       e.preventDefault();
       if (!restaurantForm.name || !restaurantForm.address || !restaurantForm.image) {
-         toast.error('Please fill in all required fields');
+         toast.error('Please fill in all required fields and upload an image');
          return;
       }
 
@@ -135,7 +140,7 @@ const RestaurantDashboard = () => {
    const handleMenuSubmit = async (e) => {
       e.preventDefault();
       if (!menuForm.title || !menuForm.description || !menuForm.price || !menuForm.image || !menuForm.category) {
-         toast.error('Please fill in all required fields');
+         toast.error('Please fill in all required fields and upload an image');
          return;
       }
 
@@ -491,18 +496,34 @@ const RestaurantDashboard = () => {
                                     required
                                  />
                               </div>
+
+                              {/* --- RESTAURANT IMAGE UPLOADER --- */}
                               <div>
                                  <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                    Image URL *
+                                    Restaurant Image *
                                  </label>
-                                 <input
-                                    type='text'
-                                    value={restaurantForm.image}
-                                    onChange={(e) => setRestaurantForm({ ...restaurantForm, image: e.target.value })}
-                                    className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                    required
-                                 />
+                                 <div className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50">
+                                    <FileUploaderRegular
+                                       sourceList="local, url, camera"
+                                       classNameUploader="uc-light"
+                                       pubkey={UPLOADCARE_PUB_KEY}
+                                       imgOnly={true}
+                                       onFileUploadSuccess={(info) => {
+                                          setRestaurantForm({ ...restaurantForm, image: info.cdnUrl });
+                                          toast.success('Image uploaded!');
+                                       }}
+                                    />
+                                    {/* Show preview if image exists */}
+                                    {restaurantForm.image && (
+                                       <div className="mt-2">
+                                          <p className="text-xs text-green-600 mb-1">Current Image:</p>
+                                          <img src={restaurantForm.image} alt="Preview" className="h-20 w-auto rounded border" />
+                                       </div>
+                                    )}
+                                 </div>
                               </div>
+                              {/* ---------------------------------- */}
+
                               <div className='flex items-center gap-3'>
                                  <input
                                     type='checkbox'
@@ -617,18 +638,33 @@ const RestaurantDashboard = () => {
                                        required
                                     />
                                  </div>
+
+                                 {/* --- MENU IMAGE UPLOADER --- */}
                                  <div>
                                     <label className='block text-sm font-medium text-gray-700 mb-2'>
-                                       Image URL *
+                                       Image *
                                     </label>
-                                    <input
-                                       type='text'
-                                       value={menuForm.image}
-                                       onChange={(e) => setMenuForm({ ...menuForm, image: e.target.value })}
-                                       className='w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
-                                       required
-                                    />
+                                    <div className="w-full border border-gray-300 rounded-lg p-2 bg-gray-50">
+                                       <FileUploaderRegular
+                                          sourceList="local, url, camera"
+                                          classNameUploader="uc-light"
+                                          pubkey={UPLOADCARE_PUB_KEY}
+                                          imgOnly={true}
+                                          onFileUploadSuccess={(info) => {
+                                             setMenuForm({ ...menuForm, image: info.cdnUrl });
+                                             toast.success('Image uploaded!');
+                                          }}
+                                       />
+                                       {/* Show preview if image exists */}
+                                       {menuForm.image && (
+                                          <div className="mt-2">
+                                             <p className="text-xs text-green-600 mb-1">Current Image:</p>
+                                             <img src={menuForm.image} alt="Preview" className="h-20 w-auto rounded border" />
+                                          </div>
+                                       )}
+                                    </div>
                                  </div>
+                                 {/* --------------------------- */}
                               </div>
                               <div>
                                  <label className='block text-sm font-medium text-gray-700 mb-2'>

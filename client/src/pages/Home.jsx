@@ -1,54 +1,14 @@
 import React, { useState } from 'react';
 import Footer from '../components/Footer';
-import API from '../services/api';
-import { FaFacebook, FaTwitter, FaInstagram } from 'react-icons/fa';
-import RestaurantCard from '../components/RestaurantCard';
 
 const Home = () => {
-   // const [restaurants, setRestaurants] = useState([]);
-   // const [loading, setLoading] = useState(true);
-   // const [error, setError] = useState(null);
-   const [searchQuery, setSearchQuery] = useState('');
-
-   // useEffect(() => {
-   //    const fetchRestaurants = async () => {
-   //       try {
-   //          const { data } = await API.get('/restaurants');
-   //          setRestaurants(data.data);
-   //          setLoading(false);
-   //       } catch (error) {
-   //          console.error("Error fetching restaurants", error);
-   //          setError("Failed to load restaurants");
-   //          setLoading(false);
-   //       }
-   //    };
-   //    fetchRestaurants();
-   // }, []);
-
-
-   // if (loading) {
-   //    return (
-   //       <div className='flex justify-center items-center min-h-screen bg-gray-50'>
-   //          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500'></div>
-   //       </div>
-   //    );
-   // }
-
-   // if (error) {
-   //    return (
-   //       <div className='min-h-screen bg-gray-50 flex items-center justify-center'>
-   //          <div className='text-center text-red-500 font-semibold text-lg'>
-   //             {error}
-   //          </div>
-   //       </div>
-   //    );
-   // }
+   // const [searchQuery, setSearchQuery] = useState('');
 
    return (
       <div className='min-h-screen'>
          {/* Hero Section */}
          <div className='bg-blue-400 text-white'>
-            <div className='w-full mx-auto px-4 py-16 md:py-24'>
+            <div className='w-full mx-auto px-4 py-16 md:py-32'>
                <div className='text-center'>
                   <h1 className='text-5xl md:text-6xl lg:text-7xl font-extrabold mb-6 leading-tight'>
                      Delicious Food,
@@ -60,7 +20,7 @@ const Home = () => {
                   </p>
 
                   {/* Search Bar */}
-                  <div className='max-w-2xl mx-auto mb-8'>
+                  {/* <div className='max-w-2xl mx-auto mb-8'>
                      <div className='relative'>
                         <input
                            type='text'
@@ -73,7 +33,7 @@ const Home = () => {
                            Search
                         </button>
                      </div>
-                  </div>
+                  </div> */}
 
                   {/* Stats or Features */}
                   <div className='flex flex-wrap justify-center gap-8 md:gap-12 mt-12'>

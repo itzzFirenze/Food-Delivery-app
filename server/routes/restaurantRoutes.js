@@ -109,19 +109,15 @@ router.patch('/:id', verifyToken, async (req, res) => {
 router.delete('/:id', verifyToken, async (req, res) => {
    try {
       const id = req.params.id;
-
-      // Find the restaurant first (without deleting)
       const restaurant = await Restaurant.findById(id);
       if (!restaurant) {
          return res.status(404).json({ message: `Restaurant with id ${id} not found` });
       }
 
-      // Check permissions BEFORE deleting
       if (req.user.role !== 'admin' && req.user.id !== restaurant.owner.toString()) {
          return res.status(403).json({ message: "Access denied" });
       }
 
-      // Now delete the restaurant
       await Restaurant.findByIdAndDelete(id);
 
       return res.status(200).json({ message: `Restaurant with id ${id} deleted successfully` });
@@ -137,10 +133,6 @@ router.get('/:id/menu', async (req, res) => {
    try {
       const id = req.params.id;
       const menuItems = await MenuItem.find({ restaurantId: id }).sort({ createdAt: -1 });
-
-      // if (menuItems.length === 0) {
-      //    return res.status(404).json({ message: "No menu items found for this restaurant" });
-      // }
 
       return res.status(200).json({ data: menuItems });
    } catch (error) {
@@ -200,10 +192,6 @@ router.patch('/:restaurantId/menu/:menuItemId', verifyToken, async (req, res) =>
       if (req.user.role !== 'admin' && req.user.id !== restaurant.owner.toString()) {
          return res.status(403).json({ message: "Access denied" });
       }
-
-      // if (!title || !price || !category) {
-      //    return res.status(400).json({ error: "Title, price and category are required" });
-      // }
 
       const updatedMenuItem = await MenuItem.findOneAndUpdate(
          {

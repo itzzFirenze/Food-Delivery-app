@@ -321,15 +321,15 @@ const Cart = () => {
    const isEmpty = !cart || !cart.items || cart.items.length === 0;
 
    return (
-      <div className='min-h-screen bg-gray-50'>
+      <div className='min-h-screen bg-gray-50 md:py-0 py-10'>
          <Toaster position='top-center' reverseOrder={false} />
          <div className='max-w-7xl mx-auto px-4 py-8'>
             <div className='flex items-center justify-between mb-8'>
-               <h1 className='text-4xl font-bold text-gray-900'>Shopping Cart</h1>
+               <h1 className='text-3xl md:text-4xl font-bold text-gray-900'>Shopping Cart</h1>
                {!isEmpty && (
                   <button
                      onClick={clearCart}
-                     className='cursor-pointer text-red-500 hover:text-red-700 font-medium flex items-center gap-2 transition'
+                     className='cursor-pointer text-red-500 hover:text-red-700 font-medium flex items-center gap-2 transition text-sm md:text-base'
                   >
                      <FaTrash /> Clear Cart
                   </button>
@@ -337,7 +337,7 @@ const Cart = () => {
             </div>
 
             {isEmpty ? (
-               <div className='bg-white rounded-3xl p-16 text-center shadow-sm'>
+               <div className='bg-white rounded-3xl p-8 md:p-16 text-center shadow-sm'>
                   <div className='text-6xl mb-4'>🛒</div>
                   <h2 className='text-2xl font-semibold text-gray-700 mb-2'>Your cart is empty</h2>
                   <p className='text-gray-500 mb-6'>Add some delicious items to get started!</p>
@@ -351,18 +351,25 @@ const Cart = () => {
             ) : (
                <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
                   <div className='lg:col-span-2 space-y-6'>
-                     <div className='bg-white rounded-2xl shadow-sm p-6'>
-                        <div className='grid grid-cols-12 gap-4 text-xl font-medium text-gray-700 pb-4 border-b border-gray-200'>
+                     <div className='bg-white rounded-2xl shadow-sm p-4 md:p-6'>
+                        {/* Header - Hidden on Mobile */}
+                        <div className='hidden md:grid grid-cols-12 gap-4 text-xl font-medium text-gray-700 pb-4 border-b border-gray-200'>
                            <div className='col-span-4'>Item</div>
                            <div className='col-span-2 text-center'>Price</div>
                            <div className='col-span-3 text-center'>Quantity</div>
                            <div className='col-span-2 text-center'>Total</div>
                            <div className='col-span-1'></div>
                         </div>
+
+                        {/* Cart Items */}
                         <div className='divide-y divide-gray-100'>
                            {cart.items.map((item) => (
-                              <div key={item._id} className='grid grid-cols-12 gap-4 py-6 items-center'>
-                                 <div className='col-span-4 flex items-center gap-4'>
+                              <div
+                                 key={item._id}
+                                 className='flex flex-col md:grid md:grid-cols-12 gap-4 py-6 items-center border-b border-gray-100 last:border-0'
+                              >
+                                 {/* Image & Title Section */}
+                                 <div className='md:col-span-4 flex items-center gap-4 w-full'>
                                     <div className='w-20 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0'>
                                        {item.menuItem?.image ? (
                                           <img
@@ -376,49 +383,65 @@ const Cart = () => {
                                           </div>
                                        )}
                                     </div>
-                                    <div>
+                                    <div className='flex-1'>
                                        <h3 className='font-semibold text-gray-900'>{item.menuItem?.title || 'Item'}</h3>
                                        <div className={`mt-1 w-5 h-5 border-2 rounded flex items-center justify-center ${item.menuItem?.veg ? 'border-green-600' : 'border-red-500'}`}>
                                           <div className={`w-2.5 h-2.5 rounded-full ${item.menuItem?.veg ? 'bg-green-600' : 'bg-red-500'}`} />
                                        </div>
+                                       {/* Mobile Price Display */}
+                                       <p className='md:hidden text-gray-900 font-semibold mt-1'>
+                                          ₹{item.menuItem?.price || 0}
+                                       </p>
                                     </div>
                                  </div>
-                                 <div className='col-span-2 text-center'>
+
+                                 {/* Desktop Price */}
+                                 <div className='hidden md:block md:col-span-2 text-center'>
                                     <p className='text-lg font-semibold text-gray-900'>
                                        ₹{item.menuItem?.price || 0}
                                     </p>
                                  </div>
-                                 <div className='col-span-3 flex justify-center'>
-                                    <div className='flex items-center gap-3 bg-gray-100 rounded-xl'>
-                                       <button
-                                          onClick={() => updateQuantity(item._id, item.menuItem._id, item.quantity - 1)}
-                                          className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-l-xl transition cursor-pointer'
-                                       >
-                                          -
-                                       </button>
-                                       <span className='text-lg font-semibold text-gray-900 min-w-8 text-center'>
-                                          {item.quantity}
+
+                                 {/* Controls Wrapper - Flex on Mobile, Contents on Desktop */}
+                                 <div className='flex items-center justify-between w-full md:contents'>
+                                    {/* Quantity Controls */}
+                                    <div className='md:col-span-3 flex justify-center'>
+                                       <div className='flex items-center gap-3 bg-gray-100 rounded-xl'>
+                                          <button
+                                             onClick={() => updateQuantity(item._id, item.menuItem._id, item.quantity - 1)}
+                                             className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-l-xl transition cursor-pointer'
+                                          >
+                                             -
+                                          </button>
+                                          <span className='text-lg font-semibold text-gray-900 min-w-8 text-center'>
+                                             {item.quantity}
+                                          </span>
+                                          <button
+                                             onClick={() => updateQuantity(item._id, item.menuItem._id, item.quantity + 1)}
+                                             className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-r-xl transition cursor-pointer'
+                                          >
+                                             +
+                                          </button>
+                                       </div>
+                                    </div>
+
+                                    {/* Total Price */}
+                                    <div className='md:col-span-2 text-center'>
+                                       <span className='md:hidden text-sm text-gray-500 mr-2'>Total:</span>
+                                       <span className='text-lg font-bold text-gray-900'>
+                                          ₹{(item.menuItem?.price || 0) * item.quantity}
                                        </span>
+                                    </div>
+
+                                    {/* Delete Button */}
+                                    <div className='md:col-span-1 flex justify-end'>
                                        <button
-                                          onClick={() => updateQuantity(item._id, item.menuItem._id, item.quantity + 1)}
-                                          className='text-gray-700 font-bold text-xl px-4 py-2 hover:bg-gray-200 rounded-r-xl transition cursor-pointer'
+                                          onClick={() => removeItem(item._id)}
+                                          className='text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition cursor-pointer'
                                        >
-                                          +
+                                          <FaTrash />
                                        </button>
                                     </div>
-                                 </div>
-                                 <div className='col-span-2 text-center'>
-                                    <p className='text-lg font-bold text-gray-900'>
-                                       ₹{(item.menuItem?.price || 0) * item.quantity}
-                                    </p>
-                                 </div>
-                                 <div className='col-span-1 flex justify-end'>
-                                    <button
-                                       onClick={() => removeItem(item._id)}
-                                       className='text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition cursor-pointer'
-                                    >
-                                       <FaTrash />
-                                    </button>
                                  </div>
                               </div>
                            ))}
@@ -433,7 +456,7 @@ const Cart = () => {
                               placeholder='Street Address'
                               value={address.street}
                               onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                              className='col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
+                              className='col-span-1 md:col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none'
                            />
                            <input
                               type='text'
