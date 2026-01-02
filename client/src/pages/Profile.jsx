@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { FaUser, FaEnvelope, FaPhone, FaLock, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaLock, FaEdit, FaSave, FaTimes, FaStore } from 'react-icons/fa';
 import { toast, Toaster } from 'react-hot-toast';
 import API from '../services/api';
 import AuthContext from '../context/AuthContext';
@@ -11,12 +11,14 @@ const Profile = () => {
    const [editMode, setEditMode] = useState(false);
    const [passwordMode, setPasswordMode] = useState(false);
    const [saving, setSaving] = useState(false);
+   const [applying, setAppliying] = useState(false);
 
    const [profileData, setProfileData] = useState({
       name: '',
       email: '',
       phone: '',
-      role: ''
+      role: '',
+      restaurantOwnerApplication: null
    });
 
    const [passwordData, setPasswordData] = useState({
@@ -38,7 +40,8 @@ const Profile = () => {
             name: userData.name || '',
             email: userData.email || '',
             phone: userData.phone || '',
-            role: userData.role || ''
+            role: userData.role || '',
+            restaurantOwnerApplication: userData.restaurantOwnerApplication || null
          });
          setError(null);
       } catch (err) {
@@ -127,6 +130,20 @@ const Profile = () => {
       }
    };
 
+   const handleApplyRestaurantOwner = async () => {
+      try {
+         setAppliying(true);
+         await API.post('/users/apply-restaurant-owner');
+         toast.success('Application submitted successfully! Waiting for admin approval.');
+         await fetchProfile();
+      } catch (error) {
+         console.error("Error applying: ", error);
+         toast.error(error.response?.data?.message || "Failed to submit application");
+      } finally {
+         setAppliying(false);
+      }
+   };
+
    const handleCancel = () => {
       fetchProfile();
       setEditMode(false);
@@ -148,6 +165,21 @@ const Profile = () => {
       const config = roleConfig[role] || roleConfig.customer;
       return (
          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${config.color}`}>
+            {config.label}
+         </span>
+      );
+   };
+
+   const getApplicationStatusBadge = (status) => {
+      const statusConfig = {
+         pending: { color: 'bg-yellow-100 text-yellow-800 border-yellow-300', label: 'Pending Review' },
+         approved: { color: 'bg-green-100 text-green-800 border-green-300', label: 'Approved' },
+         declined: { color: 'bg-red-100 text-red-800 border-red-300', label: 'Declined' }
+      }
+
+      const config = statusConfig[status] || statusConfig.pending;
+      return (
+         <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${config.color}`}>
             {config.label}
          </span>
       );
@@ -284,6 +316,74 @@ const Profile = () => {
                      )}
                   </div>
 
+                  {/* Restaurant Owner Application Section */}
+                  {profileData.role === 'user' && !editMode && !passwordMode && (
+                     <div className='bg-white rounded-2xl shadow-sm p-6'>
+                        <div className='flex items-center gap-3 mb-4'>
+                           <FaStore className='text-purple-600 text-2xl' />
+                           <h2 className='text-2xl font-semibold text-gray-900'>Become a Restaurant Owner</h2>
+                        </div>
+
+                        {profileData.restaurantOwnerApplication ? (
+                           <div className='space-y-4'>
+                              <div className='flex items-center justify-between'>
+                                 <span className='text-gray-700 font-medium'>Application Status:</span>
+                                 {getApplicationStatusBadge(profileData.restaurantOwnerApplication.status)}
+                              </div>
+
+                              {profileData.restaurantOwnerApplication.status === 'pending' && (
+                                 <div className='bg-yellow-50 border border-yellow-200 rounded-lg p-4'>
+                                    <p className='text-yellow-800 text-sm'>
+                                       Your application is under review. Our team will review your request and get back to you soon.
+                                    </p>
+                                 </div>
+                              )}
+
+                              {profileData.restaurantOwnerApplication.status === 'declined' && (
+                                 <div className='space-y-3'>
+                                    <div className='bg-red-50 border border-red-200 rounded-lg p-4'>
+                                       <p className='text-red-800 text-sm font-medium mb-2'>Application Declined</p>
+                                       {profileData.restaurantOwnerApplication.declineReason && (
+                                          <p className='text-red-700 text-sm'>
+                                             Reason: {profileData.restaurantOwnerApplication.declineReason}
+                                          </p>
+                                       )}
+                                    </div>
+                                    <button
+                                       onClick={handleApplyRestaurantOwner}
+                                       disabled={applying}
+                                       className='w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition disabled:bg-gray-400 cursor-pointer'
+                                    >
+                                       {applying ? 'Submitting...' : 'Apply Again'}
+                                    </button>
+                                 </div>
+                              )}
+
+                              <div className='text-sm text-gray-600'>
+                                 <p>Applied on: {new Date(profileData.restaurantOwnerApplication.appliedAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                 })}</p>
+                              </div>
+                           </div>
+                        ) : (
+                           <div className='space-y-4'>
+                              <p className='text-gray-600'>
+                                 Want to list your restaurant on our platform? Apply to become a restaurant owner and start managing your own restaurant profile.
+                              </p>
+                              <button
+                                 onClick={handleApplyRestaurantOwner}
+                                 disabled={applying}
+                                 className='w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-lg transition disabled:bg-gray-400 cursor-pointer flex items-center justify-center gap-2'
+                              >
+                                 <FaStore /> {applying ? 'Submitting...' : 'Apply for Restaurant Owner'}
+                              </button>
+                           </div>
+                        )}
+                     </div>
+                  )}
+
                   {/* Password Section */}
                   {!editMode && (
                      <div className='bg-white rounded-2xl shadow-sm p-6'>
@@ -395,9 +495,11 @@ const Profile = () => {
                      <p className='text-sm text-gray-600 mb-4'>
                         If you have any questions or need assistance with your account, feel free to contact us.
                      </p>
-                     <button className='w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition cursor-pointer'>
-                        Contact Support
-                     </button>
+                     <a href='/contact-us'>
+                        <button className='w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition cursor-pointer'>
+                           Contact Support
+                        </button>
+                     </a>
                   </div>
                </div>
             </div>

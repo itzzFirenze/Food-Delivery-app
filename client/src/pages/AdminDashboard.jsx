@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { FaUsers, FaStore, FaShoppingBag, FaTicketAlt } from 'react-icons/fa';
+import { FaUsers, FaStore, FaShoppingBag, FaTicketAlt, FaClipboardList } from 'react-icons/fa';
 import UserTab from './admin-tabs/UserTab';
 import RestaurantTab from './admin-tabs/RestaurantTab';
 import OrderTab from './admin-tabs/OrderTab';
 import CouponTab from './admin-tabs/CouponTab';
+import ApplicationsTab from './admin-tabs/ApplicationsTab';
 
 const AdminDashboard = () => {
    const [activeTab, setActiveTab] = useState('users');
@@ -14,6 +15,7 @@ const AdminDashboard = () => {
          case 'restaurants': return <RestaurantTab />;
          case 'orders': return <OrderTab />;
          case 'coupons': return <CouponTab />;
+         case 'applications': return <ApplicationsTab />;
          default: return <UserTab />;
       }
    };
@@ -22,8 +24,8 @@ const AdminDashboard = () => {
       <button
          onClick={() => setActiveTab(name)}
          className={`px-6 py-3 rounded-lg font-semibold cursor-pointer transition flex items-center gap-2 ${activeTab === name
-               ? 'bg-blue-600 text-white'
-               : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            ? 'bg-blue-600 text-white'
+            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
       >
          <Icon /> {label}
@@ -43,6 +45,7 @@ const AdminDashboard = () => {
                <TabButton name="restaurants" label="Restaurants" icon={FaStore} />
                <TabButton name="orders" label="Orders" icon={FaShoppingBag} />
                <TabButton name="coupons" label="Coupons" icon={FaTicketAlt} />
+               <TabButton name="applications" label="Applications" icon={FaClipboardList} />
             </div>
 
             {renderTabContent()}

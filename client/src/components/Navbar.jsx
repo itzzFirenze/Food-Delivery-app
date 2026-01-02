@@ -79,7 +79,7 @@ const Navbar = () => {
                   </Link>
                   <Link
                      to="/contact-us"
-                     className={`text-gray-600 hover:text-blue-500 font-medium transition pb-1 border-b-2 ${isActive('/contact') ? 'border-blue-500 text-blue-500' : 'border-transparent'
+                     className={`text-gray-600 hover:text-blue-500 font-medium transition pb-1 border-b-2 ${isActive('/contact-us') ? 'border-blue-500 text-blue-500' : 'border-transparent'
                         }`}
                   >
                      Contact Us

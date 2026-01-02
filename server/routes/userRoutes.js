@@ -86,29 +86,99 @@ router.patch('/me', verifyToken, async (req, res) => {
    }
 });
 
+// Apply for restaurant owner role
+router.post('/apply-restaurant-owner', verifyToken, async (req, res) => {
+   try {
+      const user = await User.findById(req.user.id);
 
-// Update specific user (admin only)
-// router.patch('/:id', verifyToken, async (req, res) => {
-//    try {
-//       if (req.user.role !== 'admin') {
-//          return res.status(403).json({ message: "Access denied" });
-//       }
+      if (!user) {
+         return res.status(404).json({ message: "User not found" })
+      }
 
-//       const updates = req.body;
+      if (user.restaurantOwnerApplication && user.restaurantOwnerApplication.status === 'pending') {
+         return res.status(400).json({ message: "You already have a pending application" })
+      }
 
-//       const user = await User.findByIdAndUpdate(req.params.id, updates, { 
-//          new: true,
-//          runValidators: true 
-//       }).select('-password');
+      user.restaurantOwnerApplication = {
+         status: 'pending',
+         appliedAt: new Date()
+      };
 
-//       if (!user) {
-//          return res.status(404).json({ message: "User not found" });
-//       }
-//       return res.status(200).json({ message: "User updated successfully", data: user });
-//    } catch (error) {
-//       return res.status(500).json({ message: error.message });
-//    }
-// });
+      await user.save();
+      return res.status(200).json({ message: "Restaurant application submitted successfully", data: { applicationStatus: user.restaurantOwnerApplication.status, appliedAt: user.restaurantOwnerApplication.appliedAt } });
+   } catch (error) {
+      return res.status(500).json({ message: error.message });
+   }
+})
+
+// Get all restaurant applications (Admin)
+router.get('/applications/pending', verifyToken, async (req, res) => {
+   try {
+      if (req.user.role !== 'admin') {
+         return res.status(403).json({ message: "Access denied" })
+      }
+
+      const applications = await User.find({ 'restaurantOwnerApplication.status': 'pending' }).select('-password');
+
+      return res.status(200).json({ count: applications.length, data: applications })
+   } catch (error) {
+      return res.status(500).json({ message: error.message });
+   }
+})
+
+// Approve of decline restuarant owner applcation (Admin)
+router.patch('/applications/:userId/review', verifyToken, async (req, res) => {
+   try {
+      if (req.user.role !== 'admin') {
+         return res.status(403).json({ message: "Access denied" });
+      }
+
+      const { userId } = req.params;
+      const { action } = req.body;
+
+      if (!action || !['approve', 'decline'].includes(action)) {
+         return res.status(400).json({ message: "Invalid action. Must be 'approve' or 'decline'" });
+      }
+      
+      const user = await User.findById(userId);
+
+      if (action === 'approve') {
+         user.role = 'restaurant_owner';
+         user.restaurantOwnerApplication.status = 'approved';
+         user.restaurantOwnerApplication.reviewedAt = new Date();
+         user.restaurantOwnerApplication.reviewedBy = req.user.id;
+
+
+         await user.save();
+
+         return res.status(200).json({
+            message: `Application approved successfully. ${user.name} is a restaurant owner`, data: {
+               userId: user._id,
+               name: user.name,
+               role: user.role,
+               applicationStatus: user.restaurantOwnerApplication.status
+            }
+         });
+      } else {
+         user.restaurantOwnerApplication.status = 'declined';
+         user.restaurantOwnerApplication.reviewedAt = new Date();
+         user.restaurantOwnerApplication.reviewedBy = req.user.id;
+
+         await user.save();
+
+         return res.status(200).json({
+            message: "Application denied", data: {
+               userId: user._id,
+               name: user.name,
+               role: user.role,
+               applicationStatus: user.restaurantOwnerApplication.status
+            }
+         })
+      }
+   } catch (error) {
+      return res.status(500).json({ message: error.message });
+   }
+})
 
 // Delete own account
 router.delete('/me', verifyToken, async (req, res) => {
@@ -141,5 +211,6 @@ router.delete('/:id', verifyToken, async (req, res) => {
       return res.status(500).json({ message: error.message });
    }
 });
+
 
 module.exports = router;

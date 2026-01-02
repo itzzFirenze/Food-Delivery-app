@@ -24,6 +24,18 @@ const userSchema = new mongoose.Schema({
       type: String,
       enum: ['user', 'admin', 'restaurant_owner'],
       default: 'user'
+   },
+   restaurantOwnerApplication: {
+      status: {
+         type: String,
+         enum: ['pending', 'approved', 'declined'],
+      },
+      appliedAt: Date,
+      reviewedAt: Date,
+      reviewedBy: { 
+         type: mongoose.Schema.Types.ObjectId, 
+         ref: 'User' 
+      }
    }
 }, { timestamps: true })
 
