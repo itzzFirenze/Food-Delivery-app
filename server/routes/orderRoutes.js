@@ -53,6 +53,29 @@ router.get('/all-orders', verifyToken, async (req, res) => {
    }
 });
 
+// Get latest order (for auto-filling address)
+router.get('/latest', verifyToken, async (req, res) => {
+   try {
+      const userId = req.user.id;
+
+      const latestOrder = await Order.findOne({ userId })
+         .sort({ createdAt: -1 })
+         .select('deliveryAddress');
+
+      if (!latestOrder) {
+         return res.status(404).json({ message: "No previous orders found" });
+      }
+
+      return res.status(200).json({
+         data: {
+            deliveryAddress: latestOrder.deliveryAddress
+         }
+      });
+   } catch (error) {
+      return res.status(500).json({ message: error.message });
+   }
+});
+
 // Get single order
 router.get("/:orderId", verifyToken, async (req, res) => {
    try {
@@ -205,5 +228,6 @@ router.patch('/:orderId/cancel', verifyToken, async (req, res) => {
       return res.status(500).json({ message: error.message });
    }
 })
+
 
 module.exports = router;

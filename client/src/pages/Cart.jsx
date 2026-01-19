@@ -25,6 +25,7 @@ const Cart = () => {
 
    useEffect(() => {
       fetchCart();
+      fetchPreviousOrderAddress();
    }, []);
 
    const fetchCart = async (showLoading = true) => {
@@ -48,6 +49,26 @@ const Cart = () => {
          }
       }
    };
+
+   const fetchPreviousOrderAddress = async () => {
+      try {
+         const res = await API.get('/orders/latest');
+         const addr = res.data?.data?.deliveryAddress;
+
+         if (!addr) return;
+
+         setAddress({
+            street: addr.street || '',
+            city: addr.city || '',
+            state: addr.state || '',
+            zipCode: addr.zipCode || '',
+            phone: addr.phone || ''
+         });
+      } catch (err) {
+         console.log("No previous order found");
+      }
+   };
+
 
    const updateQuantity = async (itemId, menuItemId, newQuantity) => {
       if (newQuantity < 1) {
