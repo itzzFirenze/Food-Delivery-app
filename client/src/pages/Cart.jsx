@@ -335,7 +335,7 @@ const Cart = () => {
                         {/* ACTION BUTTON */}
                         <button
                            onClick={handlePlaceOrderClick}
-                           className={`w-full text-white font-semibold text-lg py-4 rounded-xl transition shadow-md hover:shadow-lg ${paymentOption === 'cod' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
+                           className={`w-full text-white font-semibold text-lg py-4 cursor-pointer rounded-xl transition shadow-md hover:shadow-lg ${paymentOption === 'cod' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
                               }`}
                         >
                            {paymentOption === 'cod' ? 'Place Order' : 'Proceed to Pay'}

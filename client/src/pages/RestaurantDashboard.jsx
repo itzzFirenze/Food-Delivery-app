@@ -71,8 +71,7 @@ const RestaurantDashboard = () => {
             setMenuItems(menuResponse.data.data || []);
          } else {
             setRestaurant(null);
-            setIsCreatingRestaurant(true);
-            setShowRestaurantModal(true);
+            // CHANGED: Removed the auto-open modal logic here
          }
          setError(null);
       } catch (err) {
@@ -81,6 +80,18 @@ const RestaurantDashboard = () => {
       } finally {
          setLoading(false);
       }
+   };
+
+   // NEW: Handler for manually clicking the create button
+   const handleCreateRestaurantClick = () => {
+      setRestaurantForm({
+         name: '',
+         address: '',
+         image: '',
+         isVeg: false
+      });
+      setIsCreatingRestaurant(true);
+      setShowRestaurantModal(true);
    };
 
    const openRestaurantDeleteModal = (restaurant) => {
@@ -127,8 +138,8 @@ const RestaurantDashboard = () => {
          setMenuItems([]);
          setShowRestaurantDeleteModal(false);
          setRestaurantToDelete(null);
-         setIsCreatingRestaurant(true);
-         setShowRestaurantModal(true);
+         setIsCreatingRestaurant(true); 
+         // Note: We don't auto-open modal here anymore, letting the user click the button
       } catch (err) {
          console.error('Error deleting restaurant:', err);
          toast.error(err.response?.data?.message || 'Failed to delete restaurant');
@@ -259,7 +270,7 @@ const RestaurantDashboard = () => {
                <p className='text-gray-600'>Manage your restaurant and menu items</p>
             </div>
 
-            {/* Tabs */}
+            {/* Tabs - Only show if restaurant exists */}
             {restaurant && (
                <div className='flex gap-4 mb-6'>
                   <button
@@ -336,9 +347,17 @@ const RestaurantDashboard = () => {
                         </div>
                      </div>
                   ) : (
+                     // CHANGED: Button to Create Restaurant if none exists
                      <div className='text-center py-12'>
                         <div className='text-6xl mb-4'>🏪</div>
-                        <p className='text-gray-600 mb-4'>No restaurant found. Create one to get started!</p>
+                        <h2 className='text-2xl font-bold text-gray-900 mb-2'>No Restaurant Found</h2>
+                        <p className='text-gray-600 mb-6'>You haven't set up your restaurant yet. Create one to start selling!</p>
+                        <button
+                           onClick={handleCreateRestaurantClick}
+                           className='bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition shadow-lg flex items-center gap-2 mx-auto cursor-pointer'
+                        >
+                           <FaPlus /> Create Restaurant
+                        </button>
                      </div>
                   )}
                </div>

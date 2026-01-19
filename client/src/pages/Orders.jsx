@@ -12,25 +12,45 @@ const Orders = () => {
    const [cancellingId, setCancellingId] = useState(null);
 
    useEffect(() => {
-      fetchOrders();
+      // 1. Initial Fetch (shows loading spinner)
+      fetchOrders(true);
+
+      // 2. Start Polling (every 5 seconds, silent update)
+      const intervalId = setInterval(() => {
+         fetchOrders(false);
+      }, 5000); // 5000ms = 5 seconds
+
+      // 3. Cleanup on unmount (stop polling when user leaves page)
+      return () => clearInterval(intervalId);
    }, []);
 
-   const fetchOrders = async () => {
+   const fetchOrders = async (showLoading = true) => {
       try {
-         setLoading(true);
+         // Only show the big spinner on the initial load
+         if (showLoading) {
+            setLoading(true);
+         }
+
          const response = await API.get('/orders');
+
+         // React creates a new array reference, so if data changed, it re-renders
          setOrders(response.data.data || []);
          setError(null);
       } catch (err) {
          console.error('Error fetching orders:', err);
-         if (err.response?.status === 404) {
-            setOrders([]);
-            setError(null);
-         } else {
-            setError('Failed to load orders');
+         // Only set error on the first load to avoid annoying popups during polling
+         if (showLoading) {
+            if (err.response?.status === 404) {
+               setOrders([]);
+            } else {
+               setError('Failed to load orders');
+            }
          }
       } finally {
-         setLoading(false);
+         // Only hide spinner if we showed it
+         if (showLoading) {
+            setLoading(false);
+         }
       }
    };
 
