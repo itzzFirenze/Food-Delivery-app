@@ -10,28 +10,32 @@ const ApplicationsTab = () => {
    const [processing, setProcessing] = useState(false);
 
    useEffect(() => {
-      fetchApplications();
+      fetchApplications(true);
+      const interval = setInterval(() => fetchApplications(false), 5000);
+      return () => clearInterval(interval);
    }, []);
 
-   const fetchApplications = async () => {
+   const fetchApplications = async (showLoading = true) => {
       try {
-         setLoading(true);
+         if (showLoading) setLoading(true);
          const response = await API.get('/users/applications/pending');
          setApplications(response.data.data || []);
       } catch (err) {
          console.error('Error fetching applications:', err);
-         toast.error('Failed to load applications');
       } finally {
-         setLoading(false);
+         if (showLoading) setLoading(false);
       }
    };
 
+   // ... (Rest of your handleApprove, handleDecline, and render logic remains exactly the same) ...
+   // Paste the rest of your original component code below here:
+   
    const handleApprove = async (userId, userName) => {
       try {
          setProcessing(true);
          await API.patch(`/users/applications/${userId}/review`, { action: 'approve' });
          toast.success(`${userName}'s application approved!`);
-         fetchApplications();
+         fetchApplications(false); // Immediate refresh
          setSelectedApplication(null);
       } catch (err) {
          console.error('Error approving application:', err);
@@ -46,7 +50,7 @@ const ApplicationsTab = () => {
          setProcessing(true);
          await API.patch(`/users/applications/${userId}/review`, { action: 'decline' });
          toast.success(`${userName}'s application declined`);
-         fetchApplications();
+         fetchApplications(false); // Immediate refresh
          setSelectedApplication(null);
       } catch (err) {
          console.error('Error declining application:', err);

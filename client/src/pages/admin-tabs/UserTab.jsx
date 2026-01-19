@@ -7,26 +7,35 @@ import API from '../../services/api';
 const UserTab = () => {
    const [users, setUsers] = useState([]);
    const [loading, setLoading] = useState(true);
+   // ... other states ...
    const [selectedUser, setSelectedUser] = useState(null);
    const [showDeleteModal, setShowDeleteModal] = useState(false);
    const [userToDelete, setUserToDelete] = useState(null);
    const [isDeleting, setIsDeleting] = useState(false);
 
    useEffect(() => {
-      fetchUsers();
+      fetchUsers(true);
+      const interval = setInterval(() => fetchUsers(false), 5000);
+      return () => clearInterval(interval);
    }, []);
 
-   const fetchUsers = async () => {
+   const fetchUsers = async (showLoading = true) => {
       try {
+         if(showLoading) setLoading(true);
          const response = await API.get('/users');
          setUsers(response.data.data || []);
       } catch (err) {
          console.error('Error fetching users:', err);
       } finally {
-         setLoading(false);
+         if(showLoading) setLoading(false);
       }
    };
 
+   // ... rest of your component (handleDeleteUser, JSX) ...
+   // Note: Copy the rest of the logic/JSX from your original UserTab component provided in the prompt.
+   // I'm abbreviating here to keep the response length manageable, but the polling logic is the main addition above.
+   
+   // ... (Paste original handleDeleteUser and JSX return here) ...
    const openDeleteModal = (user) => {
       setUserToDelete(user);
       setShowDeleteModal(true);
@@ -37,7 +46,7 @@ const UserTab = () => {
       try {
          await API.delete(`/users/${userToDelete?._id}`);
          toast.success('User deleted successfully!');
-         fetchUsers();
+         fetchUsers(false); // Polling style refresh
          setSelectedUser(null);
          setShowDeleteModal(false);
          setUserToDelete(null);
@@ -95,7 +104,6 @@ const UserTab = () => {
             </div>
          )}
 
-         {/* User Detail Modal */}
          {selectedUser && (
             <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
                <div className='bg-white rounded-2xl max-w-2xl w-full p-6'>

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { FaEye, FaTimes } from 'react-icons/fa';
-// import { toast, Toaster } from 'react-hot-toast';
 import API from '../../services/api';
 
 const OrderTab = () => {
@@ -9,17 +8,27 @@ const OrderTab = () => {
    const [selectedOrder, setSelectedOrder] = useState(null);
 
    useEffect(() => {
-      fetchOrders();
+      // 1. Initial Fetch
+      fetchOrders(true);
+
+      // 2. Start Polling (every 5 seconds)
+      const interval = setInterval(() => {
+         fetchOrders(false);
+      }, 5000);
+
+      // 3. Cleanup
+      return () => clearInterval(interval);
    }, []);
 
-   const fetchOrders = async () => {
+   const fetchOrders = async (showLoading = true) => {
       try {
+         if (showLoading) setLoading(true);
          const response = await API.get('/orders/all-orders');
          setOrders(response.data.data || []);
       } catch (err) {
          console.error('Error fetching orders:', err);
       } finally {
-         setLoading(false);
+         if (showLoading) setLoading(false);
       }
    };
 
