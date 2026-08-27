@@ -26,16 +26,13 @@ const ApplicationsTab = () => {
          if (showLoading) setLoading(false);
       }
    };
-
-   // ... (Rest of your handleApprove, handleDecline, and render logic remains exactly the same) ...
-   // Paste the rest of your original component code below here:
    
    const handleApprove = async (userId, userName) => {
       try {
          setProcessing(true);
          await API.patch(`/users/applications/${userId}/review`, { action: 'approve' });
          toast.success(`${userName}'s application approved!`);
-         fetchApplications(false); // Immediate refresh
+         fetchApplications(false);
          setSelectedApplication(null);
       } catch (err) {
          console.error('Error approving application:', err);
@@ -50,7 +47,7 @@ const ApplicationsTab = () => {
          setProcessing(true);
          await API.patch(`/users/applications/${userId}/review`, { action: 'decline' });
          toast.success(`${userName}'s application declined`);
-         fetchApplications(false); // Immediate refresh
+         fetchApplications(false);
          setSelectedApplication(null);
       } catch (err) {
          console.error('Error declining application:', err);

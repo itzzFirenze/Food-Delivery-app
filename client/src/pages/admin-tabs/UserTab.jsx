@@ -7,7 +7,6 @@ import API from '../../services/api';
 const UserTab = () => {
    const [users, setUsers] = useState([]);
    const [loading, setLoading] = useState(true);
-   // ... other states ...
    const [selectedUser, setSelectedUser] = useState(null);
    const [showDeleteModal, setShowDeleteModal] = useState(false);
    const [userToDelete, setUserToDelete] = useState(null);
@@ -21,21 +20,16 @@ const UserTab = () => {
 
    const fetchUsers = async (showLoading = true) => {
       try {
-         if(showLoading) setLoading(true);
+         if (showLoading) setLoading(true);
          const response = await API.get('/users');
          setUsers(response.data.data || []);
       } catch (err) {
          console.error('Error fetching users:', err);
       } finally {
-         if(showLoading) setLoading(false);
+         if (showLoading) setLoading(false);
       }
    };
 
-   // ... rest of your component (handleDeleteUser, JSX) ...
-   // Note: Copy the rest of the logic/JSX from your original UserTab component provided in the prompt.
-   // I'm abbreviating here to keep the response length manageable, but the polling logic is the main addition above.
-   
-   // ... (Paste original handleDeleteUser and JSX return here) ...
    const openDeleteModal = (user) => {
       setUserToDelete(user);
       setShowDeleteModal(true);
@@ -46,7 +40,7 @@ const UserTab = () => {
       try {
          await API.delete(`/users/${userToDelete?._id}`);
          toast.success('User deleted successfully!');
-         fetchUsers(false); // Polling style refresh
+         fetchUsers(false);
          setSelectedUser(null);
          setShowDeleteModal(false);
          setUserToDelete(null);

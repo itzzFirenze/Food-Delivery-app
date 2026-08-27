@@ -8,15 +8,11 @@ const OrderTab = () => {
    const [selectedOrder, setSelectedOrder] = useState(null);
 
    useEffect(() => {
-      // 1. Initial Fetch
       fetchOrders(true);
-
-      // 2. Start Polling (every 5 seconds)
       const interval = setInterval(() => {
          fetchOrders(false);
       }, 5000);
 
-      // 3. Cleanup
       return () => clearInterval(interval);
    }, []);
 
@@ -59,10 +55,9 @@ const OrderTab = () => {
                            <td className='px-6 py-4 whitespace-nowrap'>{order.userId?.name || 'Unknown'}</td>
                            <td className='px-6 py-4 whitespace-nowrap font-bold'>₹{order.totalAmount?.toFixed(2)}</td>
                            <td className='px-6 py-4 whitespace-nowrap'>
-                               <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                  order.status === 'Delivered' ? 'bg-green-100 text-green-800' : 
-                                  order.status === 'Cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
-                               }`}>{order.status}</span>
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${order.status === 'Delivered' ? 'bg-green-100 text-green-800' :
+                                    order.status === 'Cancelled' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                                 }`}>{order.status}</span>
                            </td>
                            <td className='px-6 py-4 whitespace-nowrap'>
                               <button onClick={() => setSelectedOrder(order)} className='p-2 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer'><FaEye /></button>
