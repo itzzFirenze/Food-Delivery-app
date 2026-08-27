@@ -17,6 +17,14 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(cors());
 
+// Health check
+app.get("/health", (req, res) => {
+    res.status(200).json({
+        status: "ok",
+        message: "Backend is running"
+    });
+});
+
 app.use('/users', userRoutes);
 app.use('/auth', authRoutes);
 app.use('/restaurants', restaurantRoutes);
